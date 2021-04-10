@@ -118,7 +118,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--shear-map-path", 
                         help=f"Path to store shear maps.")
+    parser.add_argument("--convert-to-gal", action="store_true")
 
+    parser.add_argument("--only-north", action="store_true", help="Apply Dec cut of >-20")
     
     parser.add_argument("--y-raw-map", help="Input y map. Will be transformed to triplet format.")
 
@@ -210,6 +212,8 @@ if __name__ == "__main__":
         z_min = float(args.z_min)
         z_max = float(args.z_max)
 
+        convert_to_gal = args.convert_to_gal
+
         KiDS_column_names = {"x" : "ALPHA_J2000",
                              "y" : "DELTA_J2000",
                              "e1": "e1",
@@ -218,6 +222,9 @@ if __name__ == "__main__":
                              "z" : "Z_B"}
 
         KiDS_selection = [("weight", "gt", 0.0),]
+
+        if args.only_north:
+            KiDS_selection += [("DELTA_J2000", "gt", -20.0),]
 
 
         shear_output_filenames = {"triplet" :        shear_map_file,
@@ -230,11 +237,13 @@ if __name__ == "__main__":
                                       shear_catalogs: {shear_catalogs}
                                       shear_output_filenames: {shear_output_filenames}
                                       KiDS_column_names: {KiDS_column_names}
-                                      KiDS_selection: {KiDS_selection}"""))
+                                      KiDS_selection: {KiDS_selection}
+                                      Convert to galactic coordinates: {convert_to_gal}"""))
         else:
             print("Creating shear maps.")
             pylenspice.create_shear_healpix_triplet(shear_catalogs=shear_catalogs, out_filenames=shear_output_filenames, 
-                                                    hdu_idx=shear_catalog_hdu, nside=nside, flip_e1=True, convert_to_galactic=True,
+                                                    hdu_idx=shear_catalog_hdu, nside=nside, flip_e1=True,
+                                                    convert_to_galactic=convert_to_gal,
                                                     partial_maps=True, 
                                                     c_correction="data", m_correction=None, column_names=KiDS_column_names, 
                                                     selections=KiDS_selection,
@@ -261,16 +270,19 @@ if __name__ == "__main__":
                              "doublet_mask" : os.path.join(y_map_path, "doublet_mask.fits"),
                              "singlet_mask" : y_mask_file}
 
+        coords = "G" if args.convert_to_gal else "C"
+
         if args.dry_run:
             print(textwrap.dedent(f"""
                                       y_maps: {y_map}
                                       y_masks: {y_masks}
                                       output_filenames : {output_filenames}
-                                      shear_footprint_file : {shear_footprint_file}"""))
+                                      shear_footprint_file : {shear_footprint_file}
+                                      Coordinates: {coords}"""))
         else:
             print("Creating y maps.")
             pylenspice.create_foreground_healpix_triplet(y_map, y_masks, output_filenames, nside, 
-                                                         coord_in="G", coord_out="G", footprint_file=shear_footprint_file
+                                                         coord_in=coords, coord_out=coords, footprint_file=shear_footprint_file
                                                         )
 
     if do_jackknife:
