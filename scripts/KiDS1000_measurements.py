@@ -158,11 +158,11 @@ if __name__ == "__main__":
                         help=f"PolSpice thetamax parameter.")
     parser.add_argument("--apodizesigma",  
                         help=f"PolSpice apodizesigma parameter.")
-    parser.add_argument("--tenormfileout", action="store_true", default=False,
+    parser.add_argument("--tenormfileout", action="store_true", 
                         help=f"Output PolSpice tenormfile.")
     parser.add_argument("--tenormfilein", 
                         help=f"Path to PolSpice tenormfile.")
-    parser.add_argument("--kernelsfileout", action="store_true", default=False,
+    parser.add_argument("--kernelsfileout", action="store_true", 
                         help=f"Output PolSpice kernelsfile.")
 
     args = parser.parse_args()
