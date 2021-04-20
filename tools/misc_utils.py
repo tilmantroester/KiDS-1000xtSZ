@@ -49,7 +49,8 @@ def read_partial_map(path, fields, fill_value=None, scale=None):
     import astropy.io.fits
     import healpy
 
-    fill_value = fill_value or healpy.UNSEEN
+    if fill_value is None:
+        fill_value = healpy.UNSEEN
 
     maps = []
     with astropy.io.fits.open(path) as hdu:

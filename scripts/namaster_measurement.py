@@ -43,13 +43,30 @@ if __name__ == "__main__":
     parser.add_argument("--foreground-mask-already-applied",
                         action="store_true")
 
-    parser.add_argument("--pymaster-workspace-path")
+    parser.add_argument("--pymaster-workspace-output-path")
+    parser.add_argument("--pymaster-workspace-input-path")
+
+    parser.add_argument("--compute-covariance", action="store_true")
+
+    parser.add_argument("--randomize-shear", action="store_true")
+
+    parser.add_argument("--n-iter")
 
     args = parser.parse_args()
 
     n_iter = 3
+    if args.n_iter is not None:
+        n_iter = int(args.n_iter)
+        print(f"Using n_iter = {n_iter}")
 
-    os.makedirs(args.output_path, exist_ok=True)
+    output_path = args.output_path
+    os.makedirs(output_path, exist_ok=True)
+
+    if args.pymaster_workspace_output_path is None:
+        pymaster_workspace_output_path = output_path
+    else:
+        pymaster_workspace_output_path = args.pymaster_workspace_output_path
+        os.makedirs(pymaster_workspace_output_path, exist_ok=True)
 
     if len(args.shear_maps) != len(args.shear_masks):
         raise ValueError("Number of shear masks does not match number of "
@@ -65,6 +82,13 @@ if __name__ == "__main__":
         shear_data = read_partial_map(shear_map_file,
                                       fields=[2, 3], fill_value=0,
                                       scale=[1, 1])
+
+        if args.randomize_shear:
+            print("  Randomising shear field.")
+            alpha = np.pi*np.random.rand(shear_data[0].size)
+            e = np.sqrt(shear_data[0]**2 + shear_data[1]**2)
+            shear_data[0] = np.cos(2.0*alpha)*e
+            shear_data[1] = np.sin(2.0*alpha)*e
 
         print("  Creating field object")
         field_background = nmt.NmtField(shear_mask,
@@ -97,7 +121,7 @@ if __name__ == "__main__":
                           bpws=binning_operator, ells=ell, weights=2*ell+1)
 
     nmt_workspaces = []
-    if args.pymaster_workspace_path is None:
+    if args.pymaster_workspace_input_path is None:
         print("Creating workspaces and computing coupling matrices")
         for i, shear_field in enumerate(shear_fields):
             print(f"  Field {i}")
@@ -109,8 +133,19 @@ if __name__ == "__main__":
                                                   n_iter=n_iter)
             nmt_workspaces.append(nmt_workspace)
 
+            np.save(
+                os.path.join(
+                    output_path,
+                    f"pymaster_bandpower_windows_foreground_shear_{i}.npy"),
+                nmt_workspace.get_bandpower_windows())
+            np.save(
+                os.path.join(
+                    output_path,
+                    f"pymaster_coupling_matrix_foreground_shear_{i}.npy"),
+                nmt_workspace.get_coupling_matrix())
+
             nmt_workspace.write_to(os.path.join(
-                            args.output_path,
+                            pymaster_workspace_output_path,
                             f"pymaster_workspace_foreground_shear_{i}.fits"))
     else:
         print("Reading existing workspaces")
@@ -118,7 +153,7 @@ if __name__ == "__main__":
             print(f"  Field {i}")
             nmt_workspace = nmt.NmtWorkspace()
             nmt_workspace.read_from(os.path.join(
-                            args.pymaster_workspace_path,
+                            args.pymaster_workspace_input_path,
                             f"pymaster_workspace_foreground_shear_{i}.fits"))
             nmt_workspaces.append(nmt_workspace)
 
@@ -139,32 +174,33 @@ if __name__ == "__main__":
                                   for i in range(len(shear_fields))])
     header = file_header(header_info=header)
 
-    np.savetxt(os.path.join(args.output_path, "Cl_decoupled.txt"),
+    np.savetxt(os.path.join(output_path, "Cl_decoupled.txt"),
                np.vstack((ell_nmt, *Cls_decoupled)).T,
                header=header
                )
 
     ell_coupled = np.arange(Cls_coupled[0].shape[1])
-    np.savetxt(os.path.join(args.output_path, "Cl_coupled.txt"),
+    np.savetxt(os.path.join(output_path, "Cl_coupled.txt"),
                np.vstack((ell_coupled, *Cls_coupled)).T,
                header=header
                )
 
-    print("Computing coupling matricies for Gaussian covariance")
+    if args.compute_covariance:
+        print("Computing coupling matricies for Gaussian covariance")
 
-    for i, shear_field_a in enumerate(shear_fields):
-        for j, shear_field_b in enumerate(shear_fields[:i+1]):
-            print(f"  Field {i}-{j}")
-            nmt_cov_workspace = nmt.NmtCovarianceWorkspace()
+        for i, shear_field_a in enumerate(shear_fields):
+            for j, shear_field_b in enumerate(shear_fields[:i+1]):
+                print(f"  Field {i}-{j}")
+                nmt_cov_workspace = nmt.NmtCovarianceWorkspace()
 
-            nmt_cov_workspace.compute_coupling_coefficients(
-                                          fla1=foreground_field,
-                                          fla2=shear_field_a,
-                                          flb1=foreground_field,
-                                          flb2=shear_field_b)
+                nmt_cov_workspace.compute_coupling_coefficients(
+                                            fla1=foreground_field,
+                                            fla2=shear_field_a,
+                                            flb1=foreground_field,
+                                            flb2=shear_field_b)
 
-            nmt_cov_workspace.write_to(
-                os.path.join(
-                    args.output_path,
-                    f"pymaster_cov_workspace_foreground_shear_{i}"
-                    f"_foreground_shear_{j}.fits"))
+                nmt_cov_workspace.write_to(
+                    os.path.join(
+                        pymaster_workspace_output_path,
+                        f"pymaster_cov_workspace_foreground_shear_{i}"
+                        f"_foreground_shear_{j}.fits"))

@@ -11,7 +11,7 @@ import parsl_config
 @bash_app
 def run_shear_xcorr(shear_path, probe_path, output_path, 
                     tenormfileout=False, tenormfilein=None, kernelsfileout=True,
-                    thetamax=None,
+                    thetamax=None, ell_max=None,
                     jackknife_block_file=None,
                     jackknife_block_key=None, jackknife_block_idx=None,
                     bootstrap_method=None, bootstrap_field=None,
@@ -33,6 +33,8 @@ def run_shear_xcorr(shear_path, probe_path, output_path,
     if thetamax is not None:
         cmd += f" --thetamax={thetamax}"
         cmd += f" --apodizesigma={thetamax}"
+    if ell_max is not None:
+        cmd += f" --ell-max={ell_max}"
     if jackknife_block_file is not None:
         cmd += f" --jackknife-block-file={jackknife_block_file}"
     if jackknife_block_key is not None:
@@ -63,6 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--probe-paths", nargs="+")
 
     parser.add_argument("--thetamax")
+    parser.add_argument("--ell-max")
 
     parser.add_argument("--jackknife-block-file")
     parser.add_argument("--jackknife-block-key")
@@ -157,7 +160,7 @@ if __name__ == "__main__":
                 results.append(
                     run_shear_xcorr(shear_path=os.path.abspath(s), probe_path=os.path.abspath(p), output_path=os.path.abspath(output_path), 
                                     tenormfileout=True,
-                                    thetamax=args.thetamax,
+                                    thetamax=args.thetamax, ell_max=args.ell_max,
                                     n_thread=n_thread,
                                     stdout=os.path.join(log_dir, f"stdout_{name}.txt"), 
                                     stderr=os.path.join(log_dir, f"stderr_{name}.txt"),
@@ -177,7 +180,7 @@ if __name__ == "__main__":
                                         probe_path=os.path.abspath(p), 
                                         output_path=os.path.abspath(rs_output_path), 
                                         tenormfileout=False, tenormfilein=os.path.abspath(os.path.join(output_path, "spice.tenorm")),
-                                        thetamax=args.thetamax,
+                                        thetamax=args.thetamax, ell_max=args.ell_max,
                                         jackknife_block_idx=rs_idx,
                                         randomize_shear=True,
                                         tmp_dir=os.path.abspath(tmp_dir),
@@ -201,7 +204,7 @@ if __name__ == "__main__":
                                                 probe_path=os.path.abspath(p), 
                                                 output_path=os.path.abspath(bs_output_path), 
                                                 tenormfileout=False, tenormfilein=os.path.abspath(os.path.join(output_path, "spice.tenorm")),
-                                                thetamax=args.thetamax,
+                                                thetamax=args.thetamax, ell_max=args.ell_max,
                                                 jackknife_block_file=os.path.abspath(jackknife_block_file),
                                                 jackknife_block_key=block_key, jackknife_block_idx=bs_idx,
                                                 bootstrap_method=bootstrap_method, bootstrap_field=bootstrap_field,
@@ -222,7 +225,7 @@ if __name__ == "__main__":
                             results.append(
                                 run_shear_xcorr(shear_path=os.path.abspath(s), probe_path=os.path.abspath(p), output_path=os.path.abspath(jk_output_path), 
                                                 tenormfileout=False, tenormfilein=os.path.abspath(os.path.join(output_path, "spice.tenorm")),
-                                                thetamax=args.thetamax,
+                                                thetamax=args.thetamax, ell_max=args.ell_max,
                                                 jackknife_block_file=os.path.abspath(jackknife_block_file),
                                                 jackknife_block_key=block_key, jackknife_block_idx=block_idx,
                                                 tmp_dir=os.path.abspath(tmp_dir),
