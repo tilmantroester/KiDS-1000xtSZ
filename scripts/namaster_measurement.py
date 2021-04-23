@@ -34,11 +34,13 @@ if __name__ == "__main__":
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--bin-operator", required=True)
 
-    parser.add_argument("--shear-maps", nargs="+", required=True)
-    parser.add_argument("--shear-masks", nargs="+", required=True)
+    parser.add_argument("--shear-maps", nargs="+")
+    parser.add_argument("--shear-masks", nargs="+")
+    parser.add_argument("--shear-auto", action="store_true")
 
-    parser.add_argument("--foreground-map", required=True)
-    parser.add_argument("--foreground-mask", required=True)
+    parser.add_argument("--foreground-map")
+    parser.add_argument("--foreground-mask")
+    parser.add_argument("--foreground-auto", action="store_true")
 
     parser.add_argument("--foreground-mask-already-applied",
                         action="store_true")
@@ -68,125 +70,207 @@ if __name__ == "__main__":
         pymaster_workspace_output_path = args.pymaster_workspace_output_path
         os.makedirs(pymaster_workspace_output_path, exist_ok=True)
 
-    if len(args.shear_maps) != len(args.shear_masks):
+    if args.pymaster_workspace_input_path is None:
+        print("Creating workspaces and computing coupling matrices")
+        compute_coupling_matrices = True
+    else:
+        print("Reading existing workspaces from ",
+              args.pymaster_workspace_input_path)
+        compute_coupling_matrices = False
+
+    if (args.shear_maps is not None
+            and len(args.shear_maps) != len(args.shear_masks)):
         raise ValueError("Number of shear masks does not match number of "
                          "shear masks.")
 
-    shear_fields = []
-    print("Loading shear maps")
-    for shear_map_file, mask_file in zip(args.shear_maps, args.shear_masks):
-        print(shear_map_file)
-        shear_mask = healpy.read_map(mask_file, verbose=False)
-        shear_mask[shear_mask == healpy.UNSEEN] = 0
+    is_foreground_auto = args.foreground_auto
+    is_shear_auto = args.shear_auto
 
-        shear_data = read_partial_map(shear_map_file,
-                                      fields=[2, 3], fill_value=0,
-                                      scale=[1, 1])
+    if is_foreground_auto and is_shear_auto:
+        raise ValueError("Can only compute auto power spectra of either "
+                         "foreground or shear.")
+    elif is_foreground_auto:
+        print("Computing foreground auto spectrum")
+    elif is_shear_auto:
+        print("Computing shear auto spectra")
 
-        if args.randomize_shear:
-            print("  Randomising shear field.")
-            alpha = np.pi*np.random.rand(shear_data[0].size)
-            e = np.sqrt(shear_data[0]**2 + shear_data[1]**2)
-            shear_data[0] = np.cos(2.0*alpha)*e
-            shear_data[1] = np.sin(2.0*alpha)*e
+    if args.shear_maps is not None:
+        shear_fields = []
+        print("Loading shear maps")
+        for shear_map_file, mask_file in zip(args.shear_maps,
+                                             args.shear_masks):
+            print(shear_map_file)
+            shear_mask = healpy.read_map(mask_file, verbose=False)
+            shear_mask[shear_mask == healpy.UNSEEN] = 0
+
+            shear_data = read_partial_map(shear_map_file,
+                                          fields=[2, 3], fill_value=0,
+                                          scale=[1, 1])
+
+            if args.randomize_shear:
+                print("  Randomising shear field")
+                alpha = np.pi*np.random.rand(shear_data[0].size)
+                e = np.sqrt(shear_data[0]**2 + shear_data[1]**2)
+                shear_data[0] = np.cos(2.0*alpha)*e
+                shear_data[1] = np.sin(2.0*alpha)*e
+
+            print("  Creating field object")
+            field_background = nmt.NmtField(shear_mask,
+                                            shear_data,
+                                            n_iter=n_iter)
+
+            shear_fields.append(field_background)
+
+    if args.foreground_map is not None:
+        print("Loading foreground map")
+        print(args.foreground_map)
+        if args.foreground_mask_already_applied:
+            print("  Mask already applied to map")
+            foreground_mask_already_applied = True
+        else:
+            foreground_mask_already_applied = False
+
+        foreground_map = healpy.read_map(args.foreground_map, verbose=False)
+        foreground_map[foreground_map == healpy.UNSEEN] = 0
+
+        foreground_mask = healpy.read_map(args.foreground_mask, verbose=False)
+        foreground_mask[foreground_mask == healpy.UNSEEN] = 0
 
         print("  Creating field object")
-        field_background = nmt.NmtField(shear_mask,
-                                        shear_data,
-                                        n_iter=n_iter)
+        foreground_field = nmt.NmtField(
+                            foreground_mask,
+                            [foreground_map],
+                            masked_on_input=foreground_mask_already_applied,
+                            n_iter=n_iter)
 
-        shear_fields.append(field_background)
-
-    print("Loading foreground map")
-    print(args.foreground_map)
-    if args.foreground_mask_already_applied:
-        print("  Mask already applied to map.")
-    foreground_map = healpy.read_map(args.foreground_map, verbose=False)
-    foreground_map[foreground_map == healpy.UNSEEN] = 0
-
-    foreground_mask = healpy.read_map(args.foreground_mask, verbose=False)
-    foreground_mask[foreground_mask == healpy.UNSEEN] = 0
-
-    print("  Creating field object")
-    foreground_field = nmt.NmtField(
-                        foreground_mask,
-                        [foreground_map],
-                        masked_on_input=args.foreground_mask_already_applied,
-                        n_iter=n_iter)
-
-    binning_operator = np.loadtxt(args.bin_operator)
-    ell = np.arange(binning_operator.size)
-
-    nmt_bins = nmt.NmtBin(nside=healpy.get_nside(foreground_map),
-                          bpws=binning_operator, ells=ell, weights=2*ell+1)
-
-    nmt_workspaces = []
-    if args.pymaster_workspace_input_path is None:
-        print("Creating workspaces and computing coupling matrices")
-        for i, shear_field in enumerate(shear_fields):
-            print(f"  Field {i}")
-            nmt_workspace = nmt.NmtWorkspace()
-            nmt_workspace.compute_coupling_matrix(fl1=foreground_field,
-                                                  fl2=shear_field,
-                                                  bins=nmt_bins,
-                                                  is_teb=False,
-                                                  n_iter=n_iter)
-            nmt_workspaces.append(nmt_workspace)
-
-            np.save(
-                os.path.join(
-                    output_path,
-                    f"pymaster_bandpower_windows_foreground_shear_{i}.npy"),
-                nmt_workspace.get_bandpower_windows())
-            np.save(
-                os.path.join(
-                    output_path,
-                    f"pymaster_coupling_matrix_foreground_shear_{i}.npy"),
-                nmt_workspace.get_coupling_matrix())
-
-            nmt_workspace.write_to(os.path.join(
-                            pymaster_workspace_output_path,
-                            f"pymaster_workspace_foreground_shear_{i}.fits"))
+    if args.bin_operator.find("delta_ell_") == 0:
+        delta_ell = int(args.bin_operator[len("delta_ell_"):])
+        print("Using linear binning with bin width ", delta_ell)
+        nmt_bins = nmt.NmtBin.from_nside_linear(
+                        nside=healpy.get_nside(foreground_map),
+                        nlb=delta_ell)
     else:
-        print("Reading existing workspaces")
-        for i in range(len(shear_fields)):
-            print(f"  Field {i}")
+        print("Using binning operator from file ", args.bin_operator)
+        binning_operator = np.loadtxt(args.bin_operator)
+        ell = np.arange(binning_operator.size)
+
+        nmt_bins = nmt.NmtBin(nside=healpy.get_nside(foreground_map),
+                              bpws=binning_operator, ells=ell, weights=2*ell+1)
+
+    nmt_workspaces = {}
+
+    if is_foreground_auto:
+        fields_A = [foreground_field]
+        fields_B = [foreground_field]
+        field_A_tag = "foreground"
+        field_B_tag = ""
+    elif is_shear_auto:
+        fields_A = shear_fields
+        fields_B = shear_fields
+        field_A_tag = "shear_{idx}"
+        field_B_tag = "shear_{idx}"
+    else:
+        fields_A = [foreground_field]
+        fields_B = shear_fields
+        field_A_tag = "foreground"
+        field_B_tag = "shear_{idx}"
+
+    print("Getting coupling matrices")
+    for i, field_A in enumerate(fields_A):
+        tag_A = field_A_tag.format(idx=i)
+        print("  Field " + tag_A)
+        for j, field_B in enumerate(fields_B):
+            if is_shear_auto and j > i:
+                continue
+
+            tag_B = field_B_tag.format(idx=j)
+            print("    Field " + tag_B)
+
+            file_tag = tag_A + "_" + tag_B if tag_B != "" else tag_A
+
             nmt_workspace = nmt.NmtWorkspace()
-            nmt_workspace.read_from(os.path.join(
-                            args.pymaster_workspace_input_path,
-                            f"pymaster_workspace_foreground_shear_{i}.fits"))
-            nmt_workspaces.append(nmt_workspace)
+
+            if compute_coupling_matrices:
+                nmt_workspace.compute_coupling_matrix(fl1=field_A,
+                                                      fl2=field_B,
+                                                      bins=nmt_bins,
+                                                      is_teb=False,
+                                                      n_iter=n_iter)
+                nmt_workspaces[(i, j)] = nmt_workspace
+
+                np.save(
+                    os.path.join(
+                        output_path,
+                        f"pymaster_bandpower_windows_{file_tag}.npy"),
+                    nmt_workspace.get_bandpower_windows())
+                np.save(
+                    os.path.join(
+                        output_path,
+                        f"pymaster_coupling_matrix_{file_tag}.npy"),
+                    nmt_workspace.get_coupling_matrix())
+
+                nmt_workspace.write_to(os.path.join(
+                                pymaster_workspace_output_path,
+                                f"pymaster_workspace_{file_tag}.fits"))
+
+            else:
+                nmt_workspace.read_from(os.path.join(
+                        args.pymaster_workspace_input_path,
+                        f"pymaster_workspace_{file_tag}.fits"))
+                nmt_workspaces[(i, j)] = nmt_workspace
 
     print("Computing Cls")
-    Cls_coupled = []
-    Cls_decoupled = []
-    for i, (shear_field, nmt_workspace) in \
-            enumerate(zip(shear_fields, nmt_workspaces)):
-        print(f"  Field {i}")
-        Cl_coupled = nmt.compute_coupled_cell(foreground_field, shear_field)
-        Cl_decoupled = nmt_workspace.decouple_cell(Cl_coupled)
+    Cls_coupled = {}
+    Cls_decoupled = {}
+    header_columns = {}
+    for i, field_A in enumerate(fields_A):
+        tag_A = field_A_tag.format(idx=i)
+        print("  Field " + tag_A)
+        for j, field_B in enumerate(fields_B):
+            if is_shear_auto and j > i:
+                continue
 
-        Cls_coupled.append(Cl_coupled)
-        Cls_decoupled.append(Cl_decoupled)
+            tag_B = field_B_tag.format(idx=j)
+            print("    Field " + tag_B)
+            file_tag = tag_A + "_" + tag_B if tag_B != "" else tag_A
+            header_columns[(i, j)] = "Cl_" + file_tag
+
+            Cl_coupled = nmt.compute_coupled_cell(field_A, field_B)
+            noise_bias = None
+            Cl_decoupled = nmt_workspaces[(i, j)].decouple_cell(
+                                                        cl_in=Cl_coupled,
+                                                        cl_noise=noise_bias)
+
+            Cls_coupled[(i, j)] = Cl_coupled
+            Cls_decoupled[(i, j)] = Cl_decoupled
 
     ell_nmt = nmt_bins.get_effective_ells()
-    header = "ell, " + ", ".join([f"Cl_TE_zbin_{i}, Cl_TB_zbin_{i}"
-                                  for i in range(len(shear_fields))])
+    header = "ell, " + ", ".join(header_columns.values())
     header = file_header(header_info=header)
 
-    np.savetxt(os.path.join(output_path, "Cl_decoupled.txt"),
-               np.vstack((ell_nmt, *Cls_decoupled)).T,
-               header=header
-               )
+    if is_foreground_auto:
+        spectra = [("TT", 0)]
+    elif is_shear_auto:
+        spectra = [("EE", 0), ("EB", 1), ("BE", 2), ("BB", 3)]
+    else:
+        spectra = [("TE", 0), ("TB", 1)]
 
-    ell_coupled = np.arange(Cls_coupled[0].shape[1])
-    np.savetxt(os.path.join(output_path, "Cl_coupled.txt"),
-               np.vstack((ell_coupled, *Cls_coupled)).T,
-               header=header
-               )
+    for spectrum, spectrum_idx in spectra:
+        Cl_data = [Cl[spectrum_idx] for Cl in Cls_decoupled.values()]
+        np.savetxt(os.path.join(output_path, f"Cl_{spectrum}_decoupled.txt"),
+                   np.vstack((ell_nmt, *Cl_data)).T,
+                   header=header
+                   )
+
+        Cl_data = [Cl[spectrum_idx] for Cl in Cls_coupled.values()]
+        ell_coupled = np.arange(Cl_data[0].size)
+        np.savetxt(os.path.join(output_path, f"Cl_{spectrum}_coupled.txt"),
+                   np.vstack((ell_coupled, *Cl_data)).T,
+                   header=header
+                   )
 
     if args.compute_covariance:
-        print("Computing coupling matricies for Gaussian covariance")
+        print("Computing coupling matrices for Gaussian covariance")
 
         for i, shear_field_a in enumerate(shear_fields):
             for j, shear_field_b in enumerate(shear_fields[:i+1]):
