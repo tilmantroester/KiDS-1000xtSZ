@@ -20,6 +20,10 @@ def log_interpolate(x_arr, y_arr, x):
 def setup(options):
     like_name = options.get_string(option_section, "like_name")
 
+    estimator = options.get_string(option_section, "estimator",
+                                   default="polspice")
+    print(f"Using estimator {estimator}")
+
     bin_operator_file = options.get_string(option_section, "bin_operator_file")
 
     cov_file = options.get_string(option_section, "cov_file")
@@ -27,7 +31,16 @@ def setup(options):
 
     cov = np.loadtxt(cov_file)
     data = np.loadtxt(data_files)
-    bin_operator = np.loadtxt(bin_operator_file)
+    if estimator == "polspice":
+        bin_operator = np.loadtxt(bin_operator_file)
+    elif estimator == "namaster":
+        bin_operator = np.load(bin_operator_file)
+        if np.count_nonzero(bin_operator[0, :, 1]) > 0:
+            raise RuntimeError("Warning: bandpower operator includes "
+                               "TE-TB mxing, which is getting ignored.")
+        bin_operator = bin_operator[0, :, 0]
+    else:
+        raise ValueError(f"Unsupported estimator {estimator}")
 
     n_z_bin = data.shape[1]-1
     n_ell_bin = data.shape[0]
@@ -48,6 +61,7 @@ def setup(options):
             else:
                 mask = (ell >= keep_ell[0]) & (ell <= keep_ell[1])
             data_vector_mask[i*n_ell_bin:(i+1)*n_ell_bin] = mask
+            print(f"Masking bins {mask} of tomographic bin {i+1}")
 
     data_vector = data_vector[data_vector_mask]
     cov = cov[np.ix_(data_vector_mask, data_vector_mask)]

@@ -173,14 +173,14 @@ class CIBModel:
             test_x = torch.tensor(test_x, dtype=torch.float32)
             f_predictions = self.model(test_x)
 
-        result = []
-        if mean:
-            result.append(f_predictions.mean.numpy())
-        if sample:
-            result.append(f_predictions.rsample().numpy())
-        if CI:
-            l, u = f_predictions.confidence_region()
-            result.append((l.numpy(), u.numpy()))
+            result = []
+            if mean:
+                result.append(f_predictions.mean.numpy())
+            if sample:
+                result.append(f_predictions.rsample().numpy())
+            if CI:
+                l, u = f_predictions.confidence_region()
+                result.append((l.numpy(), u.numpy()))
 
         if len(result) == 1:
             return result[0]
