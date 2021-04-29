@@ -37,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument("--shear-maps", nargs="+")
     parser.add_argument("--shear-masks", nargs="+")
     parser.add_argument("--shear-auto", action="store_true")
+    parser.add_argument("--no-cross-shear", action="store_true")
 
     parser.add_argument("--foreground-map")
     parser.add_argument("--foreground-mask")
@@ -85,6 +86,7 @@ if __name__ == "__main__":
 
     is_foreground_auto = args.foreground_auto
     is_shear_auto = args.shear_auto
+    no_cross_shear = args.no_cross_shear
 
     if is_foreground_auto and is_shear_auto:
         raise ValueError("Can only compute auto power spectra of either "
@@ -93,6 +95,8 @@ if __name__ == "__main__":
         print("Computing foreground auto spectrum")
     elif is_shear_auto:
         print("Computing shear auto spectra")
+        if no_cross_shear:
+            print("Ignoring cross-bin shear correlations")
 
     if args.shear_maps is not None:
         shear_fields = []
@@ -102,6 +106,8 @@ if __name__ == "__main__":
             print(shear_map_file)
             shear_mask = healpy.read_map(mask_file, verbose=False)
             shear_mask[shear_mask == healpy.UNSEEN] = 0
+
+            nside = healpy.get_nside(shear_mask)
 
             shear_data = read_partial_map(shear_map_file,
                                           fields=[2, 3], fill_value=0,
@@ -136,6 +142,8 @@ if __name__ == "__main__":
         foreground_mask = healpy.read_map(args.foreground_mask, verbose=False)
         foreground_mask[foreground_mask == healpy.UNSEEN] = 0
 
+        nside = healpy.get_nside(foreground_map)
+
         print("  Creating field object")
         foreground_field = nmt.NmtField(
                             foreground_mask,
@@ -147,14 +155,14 @@ if __name__ == "__main__":
         delta_ell = int(args.bin_operator[len("delta_ell_"):])
         print("Using linear binning with bin width ", delta_ell)
         nmt_bins = nmt.NmtBin.from_nside_linear(
-                        nside=healpy.get_nside(foreground_map),
+                        nside=nside,
                         nlb=delta_ell)
     else:
         print("Using binning operator from file ", args.bin_operator)
         binning_operator = np.loadtxt(args.bin_operator)
         ell = np.arange(binning_operator.size)
 
-        nmt_bins = nmt.NmtBin(nside=healpy.get_nside(foreground_map),
+        nmt_bins = nmt.NmtBin(nside=nside,
                               bpws=binning_operator, ells=ell, weights=2*ell+1)
 
     nmt_workspaces = {}
@@ -180,8 +188,11 @@ if __name__ == "__main__":
         tag_A = field_A_tag.format(idx=i)
         print("  Field " + tag_A)
         for j, field_B in enumerate(fields_B):
-            if is_shear_auto and j > i:
-                continue
+            if is_shear_auto:
+                if j > i:
+                    continue
+                if no_cross_shear and i != j:
+                    continue
 
             tag_B = field_B_tag.format(idx=j)
             print("    Field " + tag_B)
@@ -227,8 +238,11 @@ if __name__ == "__main__":
         tag_A = field_A_tag.format(idx=i)
         print("  Field " + tag_A)
         for j, field_B in enumerate(fields_B):
-            if is_shear_auto and j > i:
-                continue
+            if is_shear_auto:
+                if j > i:
+                    continue
+                if no_cross_shear and i != j:
+                    continue
 
             tag_B = field_B_tag.format(idx=j)
             print("    Field " + tag_B)
@@ -272,19 +286,43 @@ if __name__ == "__main__":
     if args.compute_covariance:
         print("Computing coupling matrices for Gaussian covariance")
 
-        for i, shear_field_a in enumerate(shear_fields):
-            for j, shear_field_b in enumerate(shear_fields[:i+1]):
-                print(f"  Field {i}-{j}")
-                nmt_cov_workspace = nmt.NmtCovarianceWorkspace()
+        if not is_foreground_auto and not is_shear_auto:
+            for i, shear_field_a in enumerate(shear_fields):
+                for j, shear_field_b in enumerate(shear_fields[:i+1]):
+                    print(f"  Field {i}-{j}")
+                    nmt_cov_workspace = nmt.NmtCovarianceWorkspace()
 
-                nmt_cov_workspace.compute_coupling_coefficients(
-                                            fla1=foreground_field,
-                                            fla2=shear_field_a,
-                                            flb1=foreground_field,
-                                            flb2=shear_field_b)
+                    nmt_cov_workspace.compute_coupling_coefficients(
+                                                fla1=foreground_field,
+                                                fla2=shear_field_a,
+                                                flb1=foreground_field,
+                                                flb2=shear_field_b)
 
-                nmt_cov_workspace.write_to(
-                    os.path.join(
-                        pymaster_workspace_output_path,
-                        f"pymaster_cov_workspace_foreground_shear_{i}"
-                        f"_foreground_shear_{j}.fits"))
+                    nmt_cov_workspace.write_to(
+                        os.path.join(
+                            pymaster_workspace_output_path,
+                            f"pymaster_cov_workspace_foreground_shear_{i}"
+                            f"_foreground_shear_{j}.fits"))
+
+        elif is_shear_auto:
+            field_idx = [(i, j) for i in range(len(shear_fields))
+                         for j in range(i+1)]
+
+            for i, (idx_a1, idx_a2) in enumerate(field_idx):
+                print(f"  A {idx_a1}-{idx_a2}")
+                for idx_b1, idx_b2 in field_idx[:i+1]:
+                    print(f"    B {idx_b1}-{idx_b2}")
+                    nmt_cov_workspace = nmt.NmtCovarianceWorkspace()
+
+                    nmt_cov_workspace.compute_coupling_coefficients(
+                                                fla1=shear_fields[idx_a1],
+                                                fla2=shear_fields[idx_a2],
+                                                flb1=shear_fields[idx_b1],
+                                                flb2=shear_fields[idx_b2])
+
+                    nmt_cov_workspace.write_to(
+                        os.path.join(
+                            pymaster_workspace_output_path,
+                            f"pymaster_cov_workspace"
+                            f"_shear_{idx_a1}_shear_{idx_a2}"
+                            f"_shear_{idx_b1}_shear_{idx_b2}.fits"))
