@@ -13,20 +13,20 @@ sys.path.append("../tools/")
 from misc_utils import read_partial_map, file_header
 
 
-def compute_master(f_a, f_b, wsp):
-    # Compute the power spectrum (a la anafast) of the masked fields
-    # Note that we only use n_iter=0 here to speed up the computation,
-    # but the default value of 3 is recommended in general.
-    cl_coupled = nmt.compute_coupled_cell(f_a, f_b)
-    # Decouple power spectrum into bandpowers inverting the coupling matrix
-    cl_decoupled = wsp.decouple_cell(cl_coupled)
+def make_maps(nside, e1, e2, w, idx, rotate=False):
+    n_pix = healpy.nside2npix(nside)
 
-    return cl_decoupled
+    if rotate:
+        alpha = np.pi*np.random.rand(len(e1))
+        e = np.sqrt(e1**2 + e2**2)
+        e1 = np.cos(2.0*alpha)*e
+        e2 = np.sin(2.0*alpha)*e
 
+    e1_map = np.bincount(idx, weights=w*e1, minlength=n_pix)
+    e2_map = np.bincount(idx, weights=w*e2, minlength=n_pix)
+    w_map = np.bincount(idx, weights=w, minlength=n_pix)
 
-def bin_theory(cl, wsp):
-    return wsp.decouple_cell(wsp.couple_cell(cl))
-
+    return e1_map, e2_map, w_map
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -123,6 +123,24 @@ if __name__ == "__main__":
             print("  Creating field object")
             field_background = nmt.NmtField(shear_mask,
                                             shear_data,
+                                            n_iter=n_iter)
+
+            shear_fields.append(field_background)
+
+    if args.shear_catalogs is not None:
+        shear_fields = []
+        print("Loading shear catalogs")
+        for shear_catalog_file in args.shear_catalogs:
+            print(shear_catalog_file)
+            data = np.load(shear_catalog_file)
+
+            e1_map, e2_map, w_map = make_maps(nside, -data["e1"], data["e2"],
+                                              data["w"], data["pixel_idx"],
+                                              rotate=args.randomize_shear)
+
+            print("  Creating field object")
+            field_background = nmt.NmtField(w_map,
+                                            [e1_map, e2_map],
                                             n_iter=n_iter)
 
             shear_fields.append(field_background)
