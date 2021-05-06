@@ -230,7 +230,10 @@ if __name__ == "__main__":
         shear_output_filenames = {"triplet" :        shear_map_file,
                                   "singlet_mask" :   shear_singlet_weight_file,
                                   "doublet_mask" :   shear_mask_file,
-                                  "doublet_weight" : shear_weight_file}
+                                  "doublet_weight" : shear_weight_file,
+                                  "n_gal" : os.path.join(shear_map_path, "n_gal.fits"),
+                                  "w_sq" : os.path.join(shear_map_path, "w_sq.fits"),
+                                  "w_sq_e_sq" : os.path.join(shear_map_path, "w_sq_e_sq.fits")}
 
         if args.dry_run:
             print(textwrap.dedent(f"""
@@ -241,6 +244,7 @@ if __name__ == "__main__":
                                       Convert to galactic coordinates: {convert_to_gal}"""))
         else:
             print("Creating shear maps.")
+            os.makedirs(shear_map_path, exist_ok=True)
             pylenspice.create_shear_healpix_triplet(shear_catalogs=shear_catalogs, out_filenames=shear_output_filenames, 
                                                     hdu_idx=shear_catalog_hdu, nside=nside, flip_e1=True,
                                                     convert_to_galactic=convert_to_gal,
