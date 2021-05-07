@@ -26,7 +26,80 @@ def make_maps(nside, e1, e2, w, idx, rotate=False):
     e2_map = np.bincount(idx, weights=w*e2, minlength=n_pix)
     w_map = np.bincount(idx, weights=w, minlength=n_pix)
 
+    good_pixel = w_map > 0
+    e1_map[good_pixel] /= w_map[good_pixel]
+    e2_map[good_pixel] /= w_map[good_pixel]
+
     return e1_map, e2_map, w_map
+
+
+def make_signal_map(nside, Cl_EE_signal, mask=None):
+    Cl_0 = np.zeros(3*nside)
+
+    if len(Cl_EE_signal) == 1:
+        # 1 spin-2 field: nmaps = 2, ncls = 3
+        # EE, EB, BB
+        m = nmt.synfast_spherical(nside,
+                                  cls=[Cl_EE_signal[("A", "A")],  # EE
+                                       Cl_0,                      # EB
+                                       Cl_0],                     # BB
+                                  spin_arr=[2])
+        if mask is not None:
+            m[:, ~mask] = 0
+
+        m = {"A": m}
+    elif len(Cl_EE_signal) == 3:
+        # 2 spin-2 fields: nmaps = 4, ncls = 10
+        # E1E1, E1B1, E1E2, E1B2, B1B1, B1E2, B1B2, E2E2, E2B2, B2B2
+
+        m = nmt.synfast_spherical(nside,
+                                  cls=[Cl_EE_signal[("A", "A")],  # E1E1
+                                       Cl_0,                      # E1B1
+                                       Cl_EE_signal[("B", "A")],  # E1E2
+                                       Cl_0,                      # E1B2
+                                       Cl_0,                      # B1B1
+                                       Cl_0,                      # B1E2
+                                       Cl_0,                      # B1B2
+                                       Cl_EE_signal[("B", "B")],  # E2E2
+                                       Cl_0,                      # E2B2
+                                       Cl_0],                     # B2B2
+                                  spin_arr=[2, 2])
+        if mask is not None:
+            m[:, ~mask] = 0
+
+        m = {"A": m[0:2], "B": m[2:4]}
+    else:
+        raise ValueError("Only one or two fields are supported right now.")
+
+    return m
+
+
+def make_signal_Cls(nside, nofz_files):
+    import pyccl as ccl
+
+    ccl_cosmo = ccl.Cosmology(Omega_c=0.25, Omega_b=0.05, sigma8=0.8,
+                              n_s=0.97, h=0.7, m_nu=0.0)
+
+    probes = ["A", "B"][:len(nofz_files)]
+    WL_tracers = {}
+    for filename, probe in zip(nofz_files, probes):
+        z, nz = np.loadtxt(filename, unpack=True)
+        z += 0.025
+        WL_tracers[probe] = ccl.WeakLensingTracer(cosmo=ccl_cosmo,
+                                                  dndz=(z, nz))
+
+    ell = np.arange(3*nside)
+
+    Cl_EE_signal = {}
+    for i, probe_1 in enumerate(probes):
+        for probe_2 in probes[:i+1]:
+            Cl_EE_signal[(probe_1, probe_2)] = \
+                ccl.angular_cl(cosmo=ccl_cosmo,
+                               cltracer1=WL_tracers[probe_1],
+                               cltracer2=WL_tracers[probe_2],
+                               ell=ell)
+
+    return Cl_EE_signal
 
 
 if __name__ == "__main__":
@@ -34,12 +107,15 @@ if __name__ == "__main__":
 
     parser.add_argument("--Cl-coupled-filename")
     parser.add_argument("--Cl-decoupled-filename", required=True)
+    parser.add_argument("--Cl-decoupled-no-noise-bias-filename")
 
     parser.add_argument("--bin-operator", required=True)
 
     parser.add_argument("--shear-maps", nargs="+")
     parser.add_argument("--shear-masks", nargs="+")
     parser.add_argument("--shear-catalogs", nargs="+")
+
+    parser.add_argument("--nofz-files", nargs="+")
 
     parser.add_argument("--pymaster-workspace", required=True)
 
@@ -64,6 +140,13 @@ if __name__ == "__main__":
         raise ValueError("Either shear-maps or shear-catalogs "
                          "should be specified.")
 
+    if args.nofz_files is not None:
+        print("Adding signal maps to randoms.")
+        print("  Creating signal Cls")
+        Cl_EE_signal = make_signal_Cls(nside, args.nofz_files)
+    else:
+        Cl_EE_signal = None
+
     # Creating binning object
     if args.bin_operator.find("delta_ell_") == 0:
         delta_ell = int(args.bin_operator[len("delta_ell_"):])
@@ -83,10 +166,22 @@ if __name__ == "__main__":
 
     if args.Cl_coupled_filename:
         print("Saving coupled Cls to ", args.Cl_coupled_filename)
+        output_path = os.path.split(args.Cl_coupled_filename)[0]
+        os.makedirs(output_path, exist_ok=True)
     if args.Cl_decoupled_filename:
         print("Saving decoupled Cls to ", args.Cl_decoupled_filename)
         output_path = os.path.split(args.Cl_decoupled_filename)[0]
         os.makedirs(output_path, exist_ok=True)
+    if args.Cl_decoupled_no_noise_bias_filename:
+        print("Subtracting noise bias")
+        print("Saving decoupled Cls with noise bias removed to ",
+              args.Cl_decoupled_no_noise_bias_filename)
+        output_path = os.path.split(
+                                args.Cl_decoupled_no_noise_bias_filename)[0]
+        os.makedirs(output_path, exist_ok=True)
+        subtract_noise_bias = True
+    else:
+        subtract_noise_bias = False
 
     # Loading workspace
     print("Loading workspace: ", args.pymaster_workspace)
@@ -121,20 +216,37 @@ if __name__ == "__main__":
         probes = ["A", "B"][:len(args.shear_catalogs)]
         shear_data = {}
         w_map = {}
+        sum_w_sq_e_sq = {}
         for probe, shear_catalog_file in zip(probes, args.shear_catalogs):
             print("Probe ", probe)
             print("  Loading shear catalog: ", shear_catalog_file)
             shear_data[probe] = np.load(shear_catalog_file)
+            e1_map, e2_map, w_map[probe] = make_maps(
+                                                nside,
+                                                -shear_data[probe]["e1"],
+                                                shear_data[probe]["e2"],
+                                                shear_data[probe]["w"],
+                                                shear_data[probe]["pixel_idx"])
+            sum_w_sq_e_sq[probe] = (np.sum(
+                                        shear_data[probe]["w"]**2
+                                        * (shear_data[probe]["e1"]**2
+                                           + shear_data[probe]["e2"]**2)/2))
 
     # Do the computations
     spectra = {"EE": 0, "EB": 1, "BE": 2, "BB": 3}
 
     Cls_coupled = {name: [] for name in spectra.keys()}
     Cls_decoupled = {name: [] for name in spectra.keys()}
+    Cls_decoupled_no_noise_bias = {name: [] for name in spectra.keys()}
 
     for i in range(n_random):
         print("Randoms ", i)
         field = {}
+        if Cl_EE_signal is not None:
+            print("  Creating signal maps")
+            signal_maps = make_signal_map(nside, Cl_EE_signal,
+                                          mask=w_map[probe] > 0)
+
         for probe in probes:
             print("  Probe ", probe)
             if use_maps:
@@ -151,6 +263,10 @@ if __name__ == "__main__":
                                               shear_data[probe]["pixel_idx"],
                                               rotate=True)
 
+            if Cl_EE_signal is not None:
+                random_e1_map += signal_maps[probe][0]
+                random_e2_map += signal_maps[probe][1]
+
             print("    Creating field object")
             field[probe] = nmt.NmtField(w_map[probe],
                                         [random_e1_map, random_e2_map],
@@ -160,13 +276,25 @@ if __name__ == "__main__":
 
         print("  Computing Cls")
         Cl_coupled = nmt.compute_coupled_cell(field["A"], field["B"])
-        noise_bias = None
-        Cl_decoupled = nmt_workspace.decouple_cell(cl_in=Cl_coupled,
-                                                   cl_noise=noise_bias)
+        Cl_decoupled = nmt_workspace.decouple_cell(cl_in=Cl_coupled)
+
+        if len(probes) == 1 and subtract_noise_bias:
+            Cl_0 = np.zeros(3*nside)
+            Cl_1 = np.ones(3*nside)
+            pixel_area = healpy.nside2pixarea(nside)
+
+            N_bias = pixel_area * sum_w_sq_e_sq[probe]/n_pix
+            noise_bias = [Cl_1*N_bias, Cl_0, Cl_0, Cl_1*N_bias]
+            Cl_decoupled_no_noise_bias = nmt_workspace.decouple_cell(
+                                                    cl_in=Cl_coupled,
+                                                    cl_noise=noise_bias)
 
         for name, idx in spectra.items():
             Cls_coupled[name].append(Cl_coupled[idx])
             Cls_decoupled[name].append(Cl_decoupled[idx])
+            if subtract_noise_bias:
+                Cls_decoupled_no_noise_bias[name].append(
+                                            Cl_decoupled_no_noise_bias[idx])
 
         if args.Cl_coupled_filename is not None:
             ell = np.arange(3*nside)
@@ -179,4 +307,10 @@ if __name__ == "__main__":
             np.savez(args.Cl_decoupled_filename,
                      ell=ell_eff,
                      **{name: np.array(Cls_decoupled[name])
+                        for name in spectra.keys()})
+
+        if args.Cl_decoupled_no_noise_bias_filename is not None:
+            np.savez(args.Cl_decoupled_no_noise_bias_filename,
+                     ell=ell_eff,
+                     **{name: np.array(Cls_decoupled_no_noise_bias[name])
                         for name in spectra.keys()})

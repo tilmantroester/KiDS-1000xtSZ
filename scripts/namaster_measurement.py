@@ -26,6 +26,10 @@ def make_maps(nside, e1, e2, w, idx, rotate=False):
     e2_map = np.bincount(idx, weights=w*e2, minlength=n_pix)
     w_map = np.bincount(idx, weights=w, minlength=n_pix)
 
+    good_pixel = w_map > 0
+    e1_map[good_pixel] /= w_map[good_pixel]
+    e2_map[good_pixel] /= w_map[good_pixel]
+
     return e1_map, e2_map, w_map
 
 if __name__ == "__main__":
