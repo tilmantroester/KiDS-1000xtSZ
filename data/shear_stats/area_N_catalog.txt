@@ -1,0 +1,3 @@
+# Created by Tilman Tröster (tilman@troester.space) on 2021-05-06 13:39:06 using compute_KiDS_stats.py
+# Area [deg^2]
+3.747276919899132963e+02
