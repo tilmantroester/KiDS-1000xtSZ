@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export OMP_NUM_THREADS=44
-for i in $(seq 0 100);
+for i in $(seq 100 400);
 do
     echo
     echo "Iteration ${i}"

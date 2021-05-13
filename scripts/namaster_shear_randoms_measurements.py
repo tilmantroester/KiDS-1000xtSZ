@@ -13,7 +13,7 @@ sys.path.append("../tools/")
 from misc_utils import read_partial_map
 
 
-def make_maps(nside, e1, e2, w, idx, rotate=False):
+def make_maps(nside, e1, e2, w, idx, rotate=False, return_w2_sigma2=False):
     n_pix = healpy.nside2npix(nside)
 
     if rotate:
@@ -29,6 +29,11 @@ def make_maps(nside, e1, e2, w, idx, rotate=False):
     good_pixel = w_map > 0
     e1_map[good_pixel] /= w_map[good_pixel]
     e2_map[good_pixel] /= w_map[good_pixel]
+
+    if return_w2_sigma2:
+        w2_sigma2_map = np.bincount(idx, weights=w**2*(e1**2 + e2**2)/2,
+                                    minlength=n_pix)
+        return e1_map, e2_map, w_map, w2_sigma2_map
 
     return e1_map, e2_map, w_map
 
@@ -118,10 +123,14 @@ if __name__ == "__main__":
     parser.add_argument("--nofz-files", nargs="+")
 
     parser.add_argument("--pymaster-workspace", required=True)
+    parser.add_argument("--bandpower-windows-filename")
 
     parser.add_argument("--n-randoms", required=True)
 
     parser.add_argument("--n-iter")
+
+    parser.add_argument("--compute-coupling-matrix", action="store_true")
+    parser.add_argument("--binary-mask", action="store_true")
 
     args = parser.parse_args()
 
@@ -146,6 +155,10 @@ if __name__ == "__main__":
         Cl_EE_signal = make_signal_Cls(nside, args.nofz_files)
     else:
         Cl_EE_signal = None
+
+    binary_mask = args.binary_mask
+    if binary_mask:
+        print("Using binary mask")
 
     # Creating binning object
     if args.bin_operator.find("delta_ell_") == 0:
@@ -183,10 +196,22 @@ if __name__ == "__main__":
     else:
         subtract_noise_bias = False
 
-    # Loading workspace
-    print("Loading workspace: ", args.pymaster_workspace)
-    nmt_workspace = nmt.NmtWorkspace()
-    nmt_workspace.read_from(args.pymaster_workspace)
+    if args.compute_coupling_matrix:
+        nmt_workspace = None
+        print("Will compute coupling matrix and save it to ",
+              args.pymaster_workspace)
+        output_path = os.path.split(args.pymaster_workspace)[0]
+        os.makedirs(output_path, exist_ok=True)
+    else:
+        # Loading workspace
+        print("Loading workspace: ", args.pymaster_workspace)
+        nmt_workspace = nmt.NmtWorkspace()
+        nmt_workspace.read_from(args.pymaster_workspace)
+
+    if args.bandpower_windows_filename:
+        print("Saving bandpower windows to ", args.bandpower_windows_filename)
+        output_path = os.path.split(args.bandpower_windows_filename)[0]
+        os.makedirs(output_path, exist_ok=True)
 
     # Loading maps
     if args.shear_maps is not None:
@@ -216,21 +241,53 @@ if __name__ == "__main__":
         probes = ["A", "B"][:len(args.shear_catalogs)]
         shear_data = {}
         w_map = {}
-        sum_w_sq_e_sq = {}
+        good_pixel_map = {}
+        mean_w2_sigma2 = {}
         for probe, shear_catalog_file in zip(probes, args.shear_catalogs):
             print("Probe ", probe)
             print("  Loading shear catalog: ", shear_catalog_file)
             shear_data[probe] = np.load(shear_catalog_file)
-            e1_map, e2_map, w_map[probe] = make_maps(
+            e1_map, e2_map, w_map[probe], w2_s2_map = make_maps(
                                                 nside,
                                                 -shear_data[probe]["e1"],
                                                 shear_data[probe]["e2"],
                                                 shear_data[probe]["w"],
-                                                shear_data[probe]["pixel_idx"])
-            sum_w_sq_e_sq[probe] = (np.sum(
-                                        shear_data[probe]["w"]**2
-                                        * (shear_data[probe]["e1"]**2
-                                           + shear_data[probe]["e2"]**2)/2))
+                                                shear_data[probe]["pixel_idx"],
+                                                return_w2_sigma2=True)
+            good_pixel_map[probe] = w_map[probe] > 0
+
+            if binary_mask:
+                mean_w2_sigma2[probe] = np.sum(
+                    w2_s2_map[good_pixel_map[probe]]
+                    / w_map[good_pixel_map[probe]]**2
+                    ) / n_pix
+                w_map[probe] = good_pixel_map[probe]
+            else:
+                mean_w2_sigma2[probe] = w2_s2_map.sum()/n_pix
+
+    # Compute coupling matrix
+    if nmt_workspace is None:
+        print("Computing coupling matrix")
+        field = {}
+        for probe in probes:
+            print("  Creating field object")
+            field[probe] = nmt.NmtField(w_map[probe],
+                                        None, spin=2,
+                                        n_iter=n_iter)
+        if "B" not in field:
+            field["B"] = field["A"]
+
+        nmt_workspace = nmt.NmtWorkspace()
+        nmt_workspace.compute_coupling_matrix(fl1=field["A"],
+                                              fl2=field["B"],
+                                              bins=nmt_bins,
+                                              is_teb=False,
+                                              n_iter=n_iter)
+
+        if args.bandpower_windows_filename is not None:
+            np.save(args.bandpower_windows_filename,
+                    nmt_workspace.get_bandpower_windows())
+        nmt_workspace.write_to(args.pymaster_workspace)
 
     # Do the computations
     spectra = {"EE": 0, "EB": 1, "BE": 2, "BB": 3}
@@ -255,7 +312,7 @@ if __name__ == "__main__":
                 random_e1_map = np.cos(2.0*alpha)*e_map
                 random_e2_map = np.sin(2.0*alpha)*e_map
             else:
-                random_e1_map, random_e2_map, w_map[probe] = \
+                random_e1_map, random_e2_map, _ = \
                                     make_maps(nside,
                                               -shear_data[probe]["e1"],
                                               shear_data[probe]["e2"],
@@ -283,7 +340,7 @@ if __name__ == "__main__":
             Cl_1 = np.ones(3*nside)
             pixel_area = healpy.nside2pixarea(nside)
 
-            N_bias = pixel_area * sum_w_sq_e_sq[probe]/n_pix
+            N_bias = pixel_area * mean_w2_sigma2[probe]
             noise_bias = [Cl_1*N_bias, Cl_0, Cl_0, Cl_1*N_bias]
             Cl_decoupled_no_noise_bias = nmt_workspace.decouple_cell(
                                                     cl_in=Cl_coupled,

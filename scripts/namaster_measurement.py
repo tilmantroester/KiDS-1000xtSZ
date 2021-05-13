@@ -59,6 +59,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--n-iter")
 
+    parser.add_argument("--binary-mask", action="store_true")
+
     args = parser.parse_args()
 
     n_iter = 3
@@ -87,6 +89,10 @@ if __name__ == "__main__":
             and len(args.shear_maps) != len(args.shear_masks)):
         raise ValueError("Number of shear masks does not match number of "
                          "shear masks.")
+
+    binary_mask = args.binary_mask
+    if binary_mask:
+        print("Using binary mask")
 
     is_foreground_auto = args.foreground_auto
     is_shear_auto = args.shear_auto
@@ -141,6 +147,9 @@ if __name__ == "__main__":
             e1_map, e2_map, w_map = make_maps(nside, -data["e1"], data["e2"],
                                               data["w"], data["pixel_idx"],
                                               rotate=args.randomize_shear)
+
+            if binary_mask:
+                w_map = w_map > 0
 
             print("  Creating field object")
             field_background = nmt.NmtField(w_map,
