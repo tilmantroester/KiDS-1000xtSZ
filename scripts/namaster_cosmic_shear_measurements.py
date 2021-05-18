@@ -10,7 +10,7 @@ import numpy as np
 import sys
 sys.path.append("../tools/")
 
-from misc_utils import read_partial_map
+from misc_utils import read_partial_map, printflush
 
 
 def make_maps(nside, e1, e2, w, idx, rotate=False, return_w2_sigma2=False):
@@ -107,12 +107,47 @@ def make_signal_Cls(nside, nofz_files):
     return Cl_EE_signal
 
 
+def compute_Cl_cov(Cl_EE_signal, w_map_a, w_map_b, wsp):
+    nside = healpy.get_nside(w_map_a)
+    if len(Cl_EE_signal) == 1:
+        Cl_EE = Cl_EE_signal[("A", "A")]
+    else:
+        # Use the cross-correlation
+        Cl_EE = Cl_EE_signal[("B", "A")]
+
+    Cl_0 = np.zeros(3*nside)
+
+    Cls_coupled = wsp.couple_cell([Cl_EE, Cl_0, Cl_0, Cl_0])
+    mean_w2 = (w_map_a*w_map_b).mean()
+    return Cls_coupled/mean_w2
+
+
+def compute_Cl_noise_bias(nside, mean_w2_sigma2):
+    Cl_0 = np.zeros(3*nside)
+    Cl_1 = np.ones(3*nside)
+    pixel_area = healpy.nside2pixarea(nside)
+
+    N_bias = pixel_area * mean_w2_sigma2
+    noise_bias = [Cl_1*N_bias, Cl_0, Cl_0, Cl_1*N_bias]
+    return noise_bias
+
+
+def compute_Cl_noise_cov(nside, mean_w2_sigma2, w_map_a):
+    Cl_noise_bias = np.array(compute_Cl_noise_bias(nside, mean_w2_sigma2))
+    mean_w2 = (w_map_a**2).mean()
+    Cl_noise_cov = Cl_noise_bias/mean_w2
+    return Cl_noise_cov
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--Cl-coupled-filename")
-    parser.add_argument("--Cl-decoupled-filename", required=True)
+    parser.add_argument("--Cl-decoupled-filename")
     parser.add_argument("--Cl-decoupled-no-noise-bias-filename")
+
+    parser.add_argument("--Cl-data-filename")
+    parser.add_argument("--Cl-cov-filename")
 
     parser.add_argument("--bin-operator", required=True)
 
@@ -186,6 +221,9 @@ if __name__ == "__main__":
         output_path = os.path.split(args.Cl_decoupled_filename)[0]
         os.makedirs(output_path, exist_ok=True)
     if args.Cl_decoupled_no_noise_bias_filename:
+        if len(args.shear_catalogs) > 1:
+            raise ValueError("Computing cross-spectra, "
+                             "no noise bias to subtact")
         print("Subtracting noise bias")
         print("Saving decoupled Cls with noise bias removed to ",
               args.Cl_decoupled_no_noise_bias_filename)
@@ -195,6 +233,20 @@ if __name__ == "__main__":
         subtract_noise_bias = True
     else:
         subtract_noise_bias = False
+
+    if args.Cl_data_filename is not None:
+        compute_data_Cls = True
+        print("Will compute data Cls and save them to ",
+              args.Cl_data_filename)
+        output_path = os.path.split(args.Cl_data_filename)[0]
+        os.makedirs(output_path, exist_ok=True)
+    else:
+        compute_data_Cls = False
+
+    if args.Cl_cov_filename is not None:
+        print("Saving covariance Cls to ", args.Cl_cov_filename)
+        output_path = os.path.split(args.Cl_cov_filename)[0]
+        os.makedirs(output_path, exist_ok=True)
 
     if args.compute_coupling_matrix:
         nmt_workspace = None
@@ -243,6 +295,7 @@ if __name__ == "__main__":
         w_map = {}
         good_pixel_map = {}
         mean_w2_sigma2 = {}
+        field = {}
         for probe, shear_catalog_file in zip(probes, args.shear_catalogs):
             print("Probe ", probe)
             print("  Loading shear catalog: ", shear_catalog_file)
@@ -265,15 +318,21 @@ if __name__ == "__main__":
             else:
                 mean_w2_sigma2[probe] = w2_s2_map.sum()/n_pix
 
+            if compute_data_Cls:
+                print("  Creating field")
+                field[probe] = nmt.NmtField(w_map[probe],
+                                            [e1_map, e2_map],
+                                            n_iter=n_iter)
+
     # Compute coupling matrix
     if nmt_workspace is None:
         print("Computing coupling matrix")
-        field = {}
-        for probe in probes:
-            print("  Creating field object")
-            field[probe] = nmt.NmtField(w_map[probe],
-                                        None, spin=2,
-                                        n_iter=n_iter)
+        if len(field) == 0:
+            for probe in probes:
+                print("  Creating field object")
+                field[probe] = nmt.NmtField(w_map[probe],
+                                            None, spin=2,
+                                            n_iter=n_iter)
         if "B" not in field:
             field["B"] = field["A"]
 
@@ -283,13 +342,60 @@ if __name__ == "__main__":
                                               bins=nmt_bins,
                                               is_teb=False,
                                               n_iter=n_iter)
-
-        if args.bandpower_windows_filename is not None:
-            np.save(args.bandpower_windows_filename,
-                    nmt_workspace.get_bandpower_windows())
         nmt_workspace.write_to(args.pymaster_workspace)
 
-    # Do the computations
+    # Save baddpower windows
+    if args.bandpower_windows_filename is not None:
+        np.save(args.bandpower_windows_filename,
+                nmt_workspace.get_bandpower_windows())
+
+    # Compute data Cls
+    if compute_data_Cls:
+        if "B" not in field:
+            field["B"] = field["A"]
+
+        print("Computing data Cls")
+        Cl_coupled = nmt.compute_coupled_cell(field["A"], field["B"])
+        Cl_decoupled = nmt_workspace.decouple_cell(cl_in=Cl_coupled)
+
+        if field["A"] == field["B"]:
+            noise_bias = compute_Cl_noise_bias(nside, mean_w2_sigma2["A"])
+            Cl_decoupled_no_noise_bias = nmt_workspace.decouple_cell(
+                                                    cl_in=Cl_coupled,
+                                                    cl_noise=noise_bias)
+        else:
+            Cl_decoupled_no_noise_bias = Cl_decoupled
+
+        ell = np.arange(3*nside)
+        np.savez(args.Cl_data_filename,
+                 ell=ell,
+                 Cl_coupled=Cl_coupled,
+                 ell_eff=ell_eff,
+                 Cl_decoupled=Cl_decoupled_no_noise_bias,
+                 Cl_decoupled_raw=Cl_decoupled)
+
+    # Compute covariance Cls
+    if args.Cl_cov_filename is not None:
+        printflush("Computing Cls for covariance")
+        Cl_cov = compute_Cl_cov(
+                            Cl_EE_signal,
+                            w_map_a=w_map["A"],
+                            w_map_b=w_map["B"] if "B" in w_map else w_map["A"],
+                            wsp=nmt_workspace)
+        if len(probes) == 1:
+            # Auto correlation
+            Cl_noise_cov = compute_Cl_noise_cov(nside,
+                                                mean_w2_sigma2["A"],
+                                                w_map["A"])
+        else:
+            # Cross correlation
+            Cl_noise_cov = np.zeros_like(Cl_cov)
+
+        np.savez(args.Cl_cov_filename,
+                 ell=np.arange(Cl_cov.shape[1]),
+                 Cl_cov=Cl_cov, Cl_noise_cov=Cl_noise_cov)
+
+    # Do the randoms computations
     spectra = {"EE": 0, "EB": 1, "BE": 2, "BB": 3}
 
     Cls_coupled = {name: [] for name in spectra.keys()}
@@ -336,12 +442,7 @@ if __name__ == "__main__":
         Cl_decoupled = nmt_workspace.decouple_cell(cl_in=Cl_coupled)
 
         if len(probes) == 1 and subtract_noise_bias:
-            Cl_0 = np.zeros(3*nside)
-            Cl_1 = np.ones(3*nside)
-            pixel_area = healpy.nside2pixarea(nside)
-
-            N_bias = pixel_area * mean_w2_sigma2[probe]
-            noise_bias = [Cl_1*N_bias, Cl_0, Cl_0, Cl_1*N_bias]
+            noise_bias = compute_Cl_noise_bias(nside, mean_w2_sigma2["A"])
             Cl_decoupled_no_noise_bias = nmt_workspace.decouple_cell(
                                                     cl_in=Cl_coupled,
                                                     cl_noise=noise_bias)
