@@ -79,3 +79,7 @@ def read_partial_map(path, fields, fill_value=None, scale=None):
             maps.append(m)
 
     return maps
+
+
+def printflush(*args, **kwargs):
+    print(*args, **kwargs, flush=True)
