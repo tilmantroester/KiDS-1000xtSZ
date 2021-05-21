@@ -167,6 +167,9 @@ if __name__ == "__main__":
     parser.add_argument("--compute-coupling-matrix", action="store_true")
     parser.add_argument("--binary-mask", action="store_true")
 
+    parser.add_argument("--no-flip-e1", action="store_true")
+    parser.add_argument("--flip-e2", action="store_true")
+
     args = parser.parse_args()
 
     nside = 2048
@@ -194,6 +197,18 @@ if __name__ == "__main__":
     binary_mask = args.binary_mask
     if binary_mask:
         print("Using binary mask")
+
+    flip_e1 = not args.no_flip_e1
+    if flip_e1:
+        print("Flipping sign of e1.")
+    else:
+        print("Not flipping sign of e1.")
+
+    flip_e2 = args.flip_e2
+    if flip_e2:
+        print("Flipping sign of e2.")
+    else:
+        print("Not flipping sign of e2.")
 
     # Creating binning object
     if args.bin_operator.find("delta_ell_") == 0:
@@ -296,14 +311,18 @@ if __name__ == "__main__":
         good_pixel_map = {}
         mean_w2_sigma2 = {}
         field = {}
+
+        e1_sign = -1 if flip_e1 else 1
+        e2_sign = -1 if flip_e2 else 1
+
         for probe, shear_catalog_file in zip(probes, args.shear_catalogs):
             print("Probe ", probe)
             print("  Loading shear catalog: ", shear_catalog_file)
             shear_data[probe] = np.load(shear_catalog_file)
             e1_map, e2_map, w_map[probe], w2_s2_map = make_maps(
                                                 nside,
-                                                -shear_data[probe]["e1"],
-                                                shear_data[probe]["e2"],
+                                                e1_sign*shear_data[probe]["e1"],
+                                                e2_sign*shear_data[probe]["e2"],
                                                 shear_data[probe]["w"],
                                                 shear_data[probe]["pixel_idx"],
                                                 return_w2_sigma2=True)
@@ -420,8 +439,8 @@ if __name__ == "__main__":
             else:
                 random_e1_map, random_e2_map, _ = \
                                     make_maps(nside,
-                                              -shear_data[probe]["e1"],
-                                              shear_data[probe]["e2"],
+                                              e1_sign*shear_data[probe]["e1"],
+                                              e2_sign*shear_data[probe]["e2"],
                                               shear_data[probe]["w"],
                                               shear_data[probe]["pixel_idx"],
                                               rotate=True)

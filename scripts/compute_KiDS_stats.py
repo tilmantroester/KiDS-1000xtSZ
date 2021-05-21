@@ -11,6 +11,19 @@ sys.path.append("../tools/")
 from misc_utils import file_header, read_partial_map
 
 
+def transform_cel_to_gal(ra, dec, e1, e2):
+    r = healpy.Rotator(coord=["C", "G"])
+    l, b = r(ra, dec, lonlat=True)
+    alpha = r.angle_ref(ra, dec, lonlat=True)
+    e = np.sqrt(e1**2 + e2**2)
+    # Need to switch sign of e1 here
+    phi = np.arctan2(e2, -e1)/2
+    e1_gal = e*np.cos(2*(phi+alpha))
+    e2_gal = e*np.sin(2*(phi+alpha))
+
+    return l, b, e1_gal, e2_gal
+
+
 if __name__ == "__main__":
     Z_CUTS = [(0.1, 0.3),
               (0.3, 0.5),
@@ -31,7 +44,7 @@ if __name__ == "__main__":
     nside = 2048
 
     if catalog_stats:
-        patches = ["N", "S", "All"]
+        patches = ["All", "N", "S"]
 
         print("Catalog-based stats")
 
@@ -83,12 +96,10 @@ if __name__ == "__main__":
                 if create_compressed_catalogs:
                     catalog_name = f"KiDS-1000_{patch}_z{z_cut[0]}-{z_cut[1]}"
                     if convert_to_gal:
-                        l, b, e1_gal, e2_gal = \
-                            pylenspice.convert_shear_to_galactic_coordinates(
-                                ra, dec, e1, e2)
+                        l, b, e1_gal, e2_gal = transform_cel_to_gal(
+                                                        ra, dec, e1, e2)
                         pixel_idx_gal = healpy.ang2pix(nside,
-                                                       -b/180*np.pi+np.pi/2,
-                                                       l/180*np.pi)
+                                                       l, b, lonlat=True)
                         filename = os.path.join(compressed_catalog_path,
                                                 catalog_name+"_galactic")
                         np.savez(filename,
@@ -96,8 +107,7 @@ if __name__ == "__main__":
                                  pixel_idx=pixel_idx_gal)
                     
                     pixel_idx = healpy.ang2pix(nside,
-                                               -dec/180*np.pi+np.pi/2,
-                                               ra/180*np.pi)
+                                               ra, dec, lonlat=True)
                     filename = os.path.join(compressed_catalog_path,
                                             catalog_name)
                     np.savez(filename, ra=ra, dec=dec, w=w, e1=e1, e2=e2,

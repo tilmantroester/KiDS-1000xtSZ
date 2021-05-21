@@ -3,6 +3,10 @@ import os
 
 
 if __name__ == "__main__":
+    galactic_coordinates = True
+
+    bin_operator_file = "../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952_namaster.txt"      # noqa: E501
+
     workspace_file_template = ("/disk09/ttroester/project_triad/namaster_workspaces/"  # noqa: E501
                                "shear_KiDS1000_shear_KiDS1000/"
                                "pymaster_workspace_shear_{}_shear_{}.fits")
@@ -16,13 +20,18 @@ if __name__ == "__main__":
     Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"            # noqa: E501
                             "cov_Cls/Cl_cov_CCL_gal_{}-{}.npz")
 
-    bin_operator_file = "../data/xcorr/bin_operator_log_n_bin_13_ell_51-2952_namaster.txt"      # noqa: E501
-
     catalog_files = ["../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.1-0.3_galactic.npz",     # noqa: E501
                      "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.3-0.5_galactic.npz",     # noqa: E501
                      "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.5-0.7_galactic.npz",     # noqa: E501
                      "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.7-0.9_galactic.npz",     # noqa: E501
                      "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.9-1.2_galactic.npz"]     # noqa: E501
+
+    if not galactic_coordinates:
+        catalog_files = ["../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.1-0.3.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.3-0.5.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.5-0.7.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.7-0.9.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.9-1.2.npz"]     # noqa: E501
 
     nofz_files = ["../runs/base_setup/data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO1_Nz.asc",  # noqa: E501
                   "../runs/base_setup/data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO2_Nz.asc",  # noqa: E501
@@ -66,5 +75,8 @@ if __name__ == "__main__":
 
         bandpower_window_file = bandpower_window_file_template.format(*idx)
         cmd += ["--bandpower-windows-filename", bandpower_window_file]
+
+        if galactic_coordinates:
+            cmd += ["--no-flip-e1"]
 
         subprocess.check_call(cmd)

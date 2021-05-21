@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # Gives 8 bins between 100 and 1500
     ell_min = 50.81327482
     ell_max = 2951.9845069
-    n_ell_bin = 13
+    n_ell_bin = 12
     bin_kind = "log"
 
     B_namaster = make_binning_operator(x=ell, x_min=ell_min, x_max=ell_max,
