@@ -21,7 +21,8 @@ def setup(options):
         import healpy
         wT, wP = healpy.pixwin(nside=nside, pol=True)
         ell = np.arange(len(wT))
-        intp = scipy.interpolate.InterpolatedUnivariateSpline(ell, wP, k=1, ext=2)
+        intp = scipy.interpolate.InterpolatedUnivariateSpline(ell, wP, k=1,
+                                                              ext="zeros")
         filter_function = intp
     else:
         raise ValueError(f"Filter {filter_function} not supported.")

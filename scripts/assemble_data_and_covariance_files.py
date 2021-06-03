@@ -26,6 +26,7 @@ if __name__ == "__main__":
                  for j in range(i+1)]
 
     Cl_EE = []
+    Cl_BB = []
     for i, (idx_a1, idx_a2) in enumerate(field_idx):
         d = np.load(os.path.join(data_Cl_path,
                                  f"Cl_gal_{idx_a1}-{idx_a2}.npz"))

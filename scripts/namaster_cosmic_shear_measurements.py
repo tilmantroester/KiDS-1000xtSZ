@@ -6,11 +6,12 @@ import pymaster as nmt
 import healpy
 
 import numpy as np
+import scipy.interpolate
 
 import sys
 sys.path.append("../tools/")
 
-from misc_utils import read_partial_map, printflush
+from misc_utils import printflush  # noqa: E402
 
 
 def make_maps(nside, e1, e2, w, idx, rotate=False, return_w2_sigma2=False):
@@ -38,36 +39,51 @@ def make_maps(nside, e1, e2, w, idx, rotate=False, return_w2_sigma2=False):
     return e1_map, e2_map, w_map
 
 
-def make_signal_map(nside, Cl_EE_signal, mask=None):
+def make_signal_map(nside, Cl_signal, probes, spins, mask=None):
     Cl_0 = np.zeros(3*nside)
 
-    if len(Cl_EE_signal) == 1:
+    if probes == ["A"]:
         # 1 spin-2 field: nmaps = 2, ncls = 3
         # EE, EB, BB
         m = nmt.synfast_spherical(nside,
-                                  cls=[Cl_EE_signal[("A", "A")],  # EE
-                                       Cl_0,                      # EB
-                                       Cl_0],                     # BB
+                                  cls=[Cl_signal[("A", "A")],  # EE
+                                       Cl_0,                   # EB
+                                       Cl_0],                  # BB
                                   spin_arr=[2])
         if mask is not None:
             m[:, ~mask] = 0
 
         m = {"A": m}
-    elif len(Cl_EE_signal) == 3:
+    elif probes == ["A", "B"] and spins["B"] == 0:
+        # 1 spin-2 field, 1 spin- field: nmaps = 3, ncls = 6
+        # EE, EB, ET, BB, BT, TT
+        m = nmt.synfast_spherical(nside,
+                                  cls=[Cl_signal[("A", "A")],   # EE
+                                       Cl_0,                    # EB
+                                       Cl_signal[("B", "A")],   # ET
+                                       Cl_0,                    # BB
+                                       Cl_0,                    # BT
+                                       Cl_signal[("B", "B")]],  # TT
+                                  spin_arr=[2, 0])
+        if mask is not None:
+            m[:, ~mask] = 0
+
+        m = {"A": m[0:2], "B": m[2]}
+    elif probes == ["A", "B"] and spins["B"] == 2:
         # 2 spin-2 fields: nmaps = 4, ncls = 10
         # E1E1, E1B1, E1E2, E1B2, B1B1, B1E2, B1B2, E2E2, E2B2, B2B2
 
         m = nmt.synfast_spherical(nside,
-                                  cls=[Cl_EE_signal[("A", "A")],  # E1E1
-                                       Cl_0,                      # E1B1
-                                       Cl_EE_signal[("B", "A")],  # E1E2
-                                       Cl_0,                      # E1B2
-                                       Cl_0,                      # B1B1
-                                       Cl_0,                      # B1E2
-                                       Cl_0,                      # B1B2
-                                       Cl_EE_signal[("B", "B")],  # E2E2
-                                       Cl_0,                      # E2B2
-                                       Cl_0],                     # B2B2
+                                  cls=[Cl_signal[("A", "A")],  # E1E1
+                                       Cl_0,                   # E1B1
+                                       Cl_signal[("B", "A")],  # E1E2
+                                       Cl_0,                   # E1B2
+                                       Cl_0,                   # B1B1
+                                       Cl_0,                   # B1E2
+                                       Cl_0,                   # B1B2
+                                       Cl_signal[("B", "B")],  # E2E2
+                                       Cl_0,                   # E2B2
+                                       Cl_0],                  # B2B2
                                   spin_arr=[2, 2])
         if mask is not None:
             m[:, ~mask] = 0
@@ -79,13 +95,53 @@ def make_signal_map(nside, Cl_EE_signal, mask=None):
     return m
 
 
-def make_signal_Cls(nside, nofz_files):
+def load_signal_Cls(nside, filenames, probes, ell_file=None):
+    data = np.loadtxt(filenames[0])
+    n_ell = 3*nside
+
+    if ell_file is not None:
+        ell = np.loadtxt(ell_file)
+    elif data.ndim > 1:
+        ell = data[:, 0]
+    else:
+        if data.shape[0] < 3*nside:
+            raise ValueError(f"Require singal Cls out to ell = {3*nside} "
+                             f"but only got {data.shape[0]}.")
+        ell = np.arange(n_ell)
+
+    if data.ndim == 1:
+        Cl = data
+    else:
+        Cl = data[:, 1]
+
+    if len(ell) < n_ell:
+        intp = scipy.interpolate.InterpolatedUnivariateSpline(ell, Cl, 
+                                                              ext=2)
+        ell = np.arange(n_ell)
+        Cl = np.zeros(n_ell)
+        Cl[2:] = intp(ell[2:])
+
+    Cl_signal = {}
+    if len(probes) == 2:
+        # Only load cross-correlation for now, since map creation isn't
+        # supported anyway
+        Cl_signal[("A", "B")] = Cl
+        Cl_signal[("B", "A")] = Cl_signal[("A", "B")]
+    else:
+        Cl_signal[("A", "A")] = Cl
+
+    return Cl_signal
+
+
+def make_signal_Cls(nside, nofz_files, probes, spins):
+    if any([s != 2 for s in spins.values()]):
+        raise ValueError("can only create Cls for shear-shear.")
+
     import pyccl as ccl
 
     ccl_cosmo = ccl.Cosmology(Omega_c=0.25, Omega_b=0.05, sigma8=0.8,
                               n_s=0.97, h=0.7, m_nu=0.0)
 
-    probes = ["A", "B"][:len(nofz_files)]
     WL_tracers = {}
     for filename, probe in zip(nofz_files, probes):
         z, nz = np.loadtxt(filename, unpack=True)
@@ -107,17 +163,22 @@ def make_signal_Cls(nside, nofz_files):
     return Cl_EE_signal
 
 
-def compute_Cl_cov(Cl_EE_signal, w_map_a, w_map_b, wsp):
+def compute_Cl_cov(Cl_signal, w_map_a, w_map_b, wsp, probes, spins):
     nside = healpy.get_nside(w_map_a)
-    if len(Cl_EE_signal) == 1:
-        Cl_EE = Cl_EE_signal[("A", "A")]
+    if len(probes) == 1:
+        Cl = Cl_signal[("A", "A")]
     else:
         # Use the cross-correlation
-        Cl_EE = Cl_EE_signal[("B", "A")]
+        Cl = Cl_signal[("B", "A")]
 
     Cl_0 = np.zeros(3*nside)
 
-    Cls_coupled = wsp.couple_cell([Cl_EE, Cl_0, Cl_0, Cl_0])
+    if len(probes) == 1 or (spins["A"] == 2 and spins["B"] == 2):
+        # EE, EB, BE, BB
+        Cls_coupled = wsp.couple_cell([Cl, Cl_0, Cl_0, Cl_0])
+    else:
+        # TE, TB
+        Cls_coupled = wsp.couple_cell([Cl, Cl_0])
     mean_w2 = (w_map_a*w_map_b).mean()
     return Cls_coupled/mean_w2
 
@@ -151,10 +212,13 @@ if __name__ == "__main__":
 
     parser.add_argument("--bin-operator", required=True)
 
-    parser.add_argument("--shear-maps", nargs="+")
-    parser.add_argument("--shear-masks", nargs="+")
+    parser.add_argument("--foreground-map")
+    parser.add_argument("--foreground-mask")
+
     parser.add_argument("--shear-catalogs", nargs="+")
 
+    parser.add_argument("--Cl-signal-files", nargs="+")
+    parser.add_argument("--Cl-signal-ell-file")
     parser.add_argument("--nofz-files", nargs="+")
 
     parser.add_argument("--pymaster-workspace", required=True)
@@ -183,16 +247,41 @@ if __name__ == "__main__":
     n_random = int(args.n_randoms)
     print(f"Producing {n_random} randoms")
 
-    if args.shear_maps is not None and args.shear_catalogs is not None:
-        raise ValueError("Either shear-maps or shear-catalogs "
-                         "should be specified.")
-
-    if args.nofz_files is not None:
-        print("Adding signal maps to randoms.")
-        print("  Creating signal Cls")
-        Cl_EE_signal = make_signal_Cls(nside, args.nofz_files)
+    if args.foreground_mask is not None:
+        if n_random > 0:
+            raise ValueError("Randoms for foreground maps not supported yet.")
+        if args.shear_catalogs is not None:
+            print("Computing cross-correlation between "
+                  "foreground and shear catalog.")
+            probes = ["A", "B"]
+            spins = {"A": 2, "B": 0}
+            if len(args.shear_catalogs) > 1:
+                raise ValueError("Cross-correlation of foreground with "
+                                 "multiple shear catalogs not supported.")
+        if args.shear_catalogs is None:
+            print("Computing auto-correlation of foreground map.")
+            probes = ["A"]
+            spins = {"A": 0, "B": 0}
+    elif len(args.shear_catalogs) > 1:
+        print("Computing cross-correlation between "
+              "two shear catalogs.")
+        probes = ["A", "B"]
+        pins = {"A": 2, "B": 2}
     else:
-        Cl_EE_signal = None
+        print("Computing auto-correlation of shear catalog.")
+        probes = ["A"]
+        pins = {"A": 2}
+
+    if args.Cl_signal_files is not None:
+        print("Loading signal Cls from ", args.Cl_signal_files)
+        Cl_signal = load_signal_Cls(nside, args.Cl_signal_files, probes,
+                                    ell_file=args.Cl_signal_ell_file)
+    elif args.nofz_files is not None:
+        print("Creating signal Cls using n(z) files ", args.nofz_files)
+        Cl_signal = make_signal_Cls(nside, args.nofz_files, probes, spins)
+    else:
+        print("Not adding signal maps to randoms.")
+        Cl_signal = None
 
     binary_mask = args.binary_mask
     if binary_mask:
@@ -259,6 +348,9 @@ if __name__ == "__main__":
         compute_data_Cls = False
 
     if args.Cl_cov_filename is not None:
+        if Cl_signal is None:
+            raise ValueError("No signal Cls specified, cannot "
+                             "compute covariance Cls.")
         print("Saving covariance Cls to ", args.Cl_cov_filename)
         output_path = os.path.split(args.Cl_cov_filename)[0]
         os.makedirs(output_path, exist_ok=True)
@@ -280,37 +372,39 @@ if __name__ == "__main__":
         output_path = os.path.split(args.bandpower_windows_filename)[0]
         os.makedirs(output_path, exist_ok=True)
 
-    # Loading maps
-    if args.shear_maps is not None:
-        use_maps = True
+    w_map = {}
+    field = {}
 
-        probes = ["A", "B"][:len(args.shear_maps)]
-        w_map = {}
-        e1_map = {}
-        e2_map = {}
-        for probe, shear_map_file, weight_map_file in zip(probes,
-                                                          args.shear_maps,
-                                                          args.shear_masks):
-            print("Probe ", probe)
-            print("  Loading shear map: ", shear_map_file)
+    # Loading foreground maps
+    if args.foreground_mask is not None:
+        if spins["A"] == 0:
+            # Foreground auto
+            probe = "A"
+        else:
+            # Cross-correlation with foreground
+            probe = "B"
+        print("Probe ", probe)
+        print("  Loading foreground mask: ", args.foreground_mask)
 
-            w_map[probe] = healpy.read_map(weight_map_file, verbose=False)
-            w_map[probe][w_map[probe] == healpy.UNSEEN] = 0
-            e1_map[probe], e2_map[probe] = read_partial_map(
-                                                shear_map_file,
-                                                fields=[2, 3], fill_value=0,
-                                                scale=[1, 1])
+        w_map[probe] = healpy.read_map(args.foreground_mask, verbose=False)
+        w_map[probe][w_map[probe] == healpy.UNSEEN] = 0
+
+        if compute_data_Cls:
+            print("  Loading foreground map: ", args.foreground_map)
+            T_map = healpy.read_map(args.foreground_map, verbose=False)
+            T_map[T_map == healpy.UNSEEN] = 0
+            print("    Creating field")
+            field[probe] = nmt.NmtField(w_map[probe],
+                                        [T_map],
+                                        spin=0,
+                                        n_iter=n_iter)
 
     # Loading catalogs
     if args.shear_catalogs is not None:
-        use_maps = False
-
-        probes = ["A", "B"][:len(args.shear_catalogs)]
         shear_data = {}
         w_map = {}
         good_pixel_map = {}
         mean_w2_sigma2 = {}
-        field = {}
 
         e1_sign = -1 if flip_e1 else 1
         e2_sign = -1 if flip_e2 else 1
@@ -320,12 +414,12 @@ if __name__ == "__main__":
             print("  Loading shear catalog: ", shear_catalog_file)
             shear_data[probe] = np.load(shear_catalog_file)
             e1_map, e2_map, w_map[probe], w2_s2_map = make_maps(
-                                                nside,
-                                                e1_sign*shear_data[probe]["e1"],
-                                                e2_sign*shear_data[probe]["e2"],
-                                                shear_data[probe]["w"],
-                                                shear_data[probe]["pixel_idx"],
-                                                return_w2_sigma2=True)
+                                            nside,
+                                            e1_sign*shear_data[probe]["e1"],
+                                            e2_sign*shear_data[probe]["e2"],
+                                            shear_data[probe]["w"],
+                                            shear_data[probe]["pixel_idx"],
+                                            return_w2_sigma2=True)
             good_pixel_map[probe] = w_map[probe] > 0
 
             if binary_mask:
@@ -338,7 +432,7 @@ if __name__ == "__main__":
                 mean_w2_sigma2[probe] = w2_s2_map.sum()/n_pix
 
             if compute_data_Cls:
-                print("  Creating field")
+                print("    Creating field")
                 field[probe] = nmt.NmtField(w_map[probe],
                                             [e1_map, e2_map],
                                             n_iter=n_iter)
@@ -346,11 +440,11 @@ if __name__ == "__main__":
     # Compute coupling matrix
     if nmt_workspace is None:
         print("Computing coupling matrix")
-        if len(field) == 0:
-            for probe in probes:
-                print("  Creating field object")
+        for probe in probes:
+            if probe not in field:
+                print(f"  Creating field object for probe {probe}.")
                 field[probe] = nmt.NmtField(w_map[probe],
-                                            None, spin=2,
+                                            None, spin=spins[probe],
                                             n_iter=n_iter)
         if "B" not in field:
             field["B"] = field["A"]
@@ -397,10 +491,11 @@ if __name__ == "__main__":
     if args.Cl_cov_filename is not None:
         printflush("Computing Cls for covariance")
         Cl_cov = compute_Cl_cov(
-                            Cl_EE_signal,
+                            Cl_signal,
                             w_map_a=w_map["A"],
                             w_map_b=w_map["B"] if "B" in w_map else w_map["A"],
-                            wsp=nmt_workspace)
+                            wsp=nmt_workspace,
+                            probes=probes, spins=spins)
         if len(probes) == 1:
             # Auto correlation
             Cl_noise_cov = compute_Cl_noise_cov(nside,
@@ -424,28 +519,22 @@ if __name__ == "__main__":
     for i in range(n_random):
         print("Randoms ", i)
         field = {}
-        if Cl_EE_signal is not None:
+        if Cl_signal is not None:
             print("  Creating signal maps")
-            signal_maps = make_signal_map(nside, Cl_EE_signal,
+            signal_maps = make_signal_map(nside, Cl_signal,
                                           mask=w_map[probe] > 0)
 
         for probe in probes:
             print("  Probe ", probe)
-            if use_maps:
-                alpha = np.pi*np.random.rand(n_pix)
-                e_map = np.sqrt(e1_map[probe]**2 + e2_map[probe]**2)
-                random_e1_map = np.cos(2.0*alpha)*e_map
-                random_e2_map = np.sin(2.0*alpha)*e_map
-            else:
-                random_e1_map, random_e2_map, _ = \
-                                    make_maps(nside,
-                                              e1_sign*shear_data[probe]["e1"],
-                                              e2_sign*shear_data[probe]["e2"],
-                                              shear_data[probe]["w"],
-                                              shear_data[probe]["pixel_idx"],
-                                              rotate=True)
+            random_e1_map, random_e2_map, _ = make_maps(
+                                            nside,
+                                            e1_sign*shear_data[probe]["e1"],
+                                            e2_sign*shear_data[probe]["e2"],
+                                            shear_data[probe]["w"],
+                                            shear_data[probe]["pixel_idx"],
+                                            rotate=True)
 
-            if Cl_EE_signal is not None:
+            if Cl_signal is not None:
                 random_e1_map += signal_maps[probe][0]
                 random_e2_map += signal_maps[probe][1]
 
