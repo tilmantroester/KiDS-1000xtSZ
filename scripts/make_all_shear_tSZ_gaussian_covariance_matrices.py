@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     os.environ["OMP_NUM_THREADS"] = "44"
 
-    for cov_block in ["EETE"]:
+    for cov_block in ["TETE", "EETE"]:
         print("Cov block: ", cov_block)
         if cov_block == "EETE":
             cov_fields_a = "shear-shear"

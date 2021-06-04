@@ -92,15 +92,16 @@ if __name__ == "__main__":
 
     defaults = {**base_config.PATHS, **base_config.DATA_DIRS}
 
-    binning_operator = np.loadtxt(
-                            cosmosis_utils.emulate_configparser_interpolation(
-                                base_config.bin_op_file, defaults))
+    # binning_operator = np.loadtxt(
+    #                         cosmosis_utils.emulate_configparser_interpolation(
+    #                             base_config.bin_op_file, defaults))
+    binning_operator = np.loadtxt("../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952.txt")
 
     OLD_MEASUREMENT_DIR = "../../project-triad-obsolete/results/measurements/"
 
-    target_beam = 1.6
+    target_beam = 10.0
 
-    CIB_maps = ["353", "545", "857"]
+    # CIB_maps = ["353", "545", "857"]
     CIB_maps = ["545"]
 
     z_cuts = [(0.1, 0.3),

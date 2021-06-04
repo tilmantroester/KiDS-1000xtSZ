@@ -112,7 +112,7 @@ def setup(options):
 
         window_functions["shear_y"] = {}
         for i, idx in enumerate(indices["shear_y"]):
-            filename = shear_y_bandpower_windows_template.format(idx)
+            filename = shear_y_bandpower_windows_template.format(idx, 0)
             window_functions["shear_y"][idx] = np.load(filename)
 
     cov = np.loadtxt(cov_file)

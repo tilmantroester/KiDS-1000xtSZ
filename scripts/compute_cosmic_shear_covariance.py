@@ -119,7 +119,8 @@ if __name__ == "__main__":
                                 cov_wsp=cov_wsp["ssss"],
                                 wsp_a=wsp_a, wsp_b=wsp_b)
 
-    cov_filename = f"cov_shear_shear_{idx_a1}-{idx_a2}_{idx_b1}-{idx_b2}.npz"
+    cov_filename = (f"cov_shear_{idx_a1}_shear_{idx_a2}_"
+                    f"shear_{idx_b1}_shear_{idx_b2}.npz")
     cov_filename = os.path.join(args.output_path, cov_filename)
     print("Saving covariance matrices to ", cov_filename)
     np.savez(cov_filename, **cov_matrix)

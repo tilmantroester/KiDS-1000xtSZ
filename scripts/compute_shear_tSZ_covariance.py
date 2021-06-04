@@ -14,14 +14,14 @@ from misc_utils import printflush  # noqa: E402
 def compute_gaussian_covariance(idx_a1, idx_a2, idx_b1, idx_b2,
                                 f_a1, f_a2, f_b1, f_b2,
                                 spins,
-                                Cl_signal, ell,
+                                Cl_signal, Cl_noise, ell,
                                 cov_wsp, wsp_a, wsp_b):
     Cls = []
     for field, idx in [((f_a1, f_b1), (idx_a1, idx_b1)),
                        ((f_a1, f_b2), (idx_a1, idx_b2)),
                        ((f_a2, f_b1), (idx_a2, idx_b1)),
                        ((f_a2, f_b2), (idx_a2, idx_b2))]:
-        Cls.append(Cl_signal[field][idx])
+        Cls.append(Cl_signal[field][idx] + Cl_noise[field][idx])
 
     cov = nmt.gaussian_covariance(cov_wsp,
                                   spin_a1=spins[f_a1], spin_a2=spins[f_a2],
@@ -64,6 +64,7 @@ if __name__ == "__main__":
           f"({f_a1}-{f_a2}, {f_b1}-{f_b2})")
 
     Cl_signal = {}
+    Cl_noise = {}
 
     if len(args.Cl_cov_file) % 2 != 0:
         raise ValueError("--Cl-cov-file requires "
@@ -80,13 +81,14 @@ if __name__ == "__main__":
                        ((f_a2, f_b2), (idx_a2, idx_b2))]:
         if field not in Cl_signal:
             Cl_signal[field] = {}
+            Cl_noise[field] = {}
 
         try:
             Cl_filename = Cl_filename_templates[field].format(*idx)
+            d = np.load(Cl_filename)
             printflush(f"Reading Cls for {idx[0]}-{idx[1]} "
                        f"({field[0]}-{field[1]})"
                        f" from ", Cl_filename)
-            d = np.load(Cl_filename)
         except (KeyError, OSError):
             Cl_filename = Cl_filename_templates[field[::-1]].format(*idx[::-1])
             printflush(f"Reading Cls for {idx[0]}-{idx[1]} "
@@ -95,6 +97,7 @@ if __name__ == "__main__":
             d = np.load(Cl_filename)
 
         Cl_signal[field][idx] = d["Cl_cov"]
+        Cl_noise[field][idx] = d["Cl_noise_cov"]
         ell = d["ell"]
 
     workspace_path_a = args.pymaster_workspace_path_a
@@ -133,6 +136,7 @@ if __name__ == "__main__":
                                 f_a1, f_a2, f_b1, f_b2,
                                 spins=spins,
                                 Cl_signal=Cl_signal,
+                                Cl_noise=Cl_noise,
                                 ell=ell,
                                 cov_wsp=cov_wsp["ssss"],
                                 wsp_a=wsp_a, wsp_b=wsp_b)

@@ -9,8 +9,8 @@ nz_files = [f"%(NZ_DATA_PATH)s/SOM_N_of_Z/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_
 nz_cov_file = "%(NZ_DATA_PATH)s/SOM_cov_multiplied.asc"
 
 XCORR_DATA_PATH = "../data/xcorr/"
-bin_op_file = "%(XCORR_DATA_PATH)s/bin_operator_log_n_bin_13_ell_51-2952.txt"
-bin_op_squared_file = "%(XCORR_DATA_PATH)s/bin_operator_log_n_bin_13_ell_51-2952_squared_weights.txt"
+bin_op_file = "%(XCORR_DATA_PATH)s/bin_operator_log_n_bin_12_ell_51-2952.txt"
+bin_op_squared_file = "%(XCORR_DATA_PATH)s/bin_operator_log_n_bin_12_ell_51-2952_squared_weights.txt"
 
 cov_file = "%(XCORR_DATA_PATH)s/shear_y_KiDS1000_milca_TE_gaussian_cNG_cov.txt"
 data_file = "%(XCORR_DATA_PATH)s/shear_y_KiDS1000_milca_TE.txt"
