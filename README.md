@@ -1,5 +1,4 @@
-# Make measurements
-## Cosmic shear
+# Make cosmic shear measurements
 
 ## Create catalogs and catalog statistics
 ```
@@ -25,10 +24,43 @@ python make_all_shear_shear_measurements.py
 
 ## Compute Gaussian covariance matrices
 ```
-python make_all_shear_gaussian_covariance_matrices
+python make_all_shear_gaussian_covariance_matrices.py
 ```
 
 ## Assemble data and covariances into single files for likelihood
 ```
 python assemble_data_and_covariance_files.py
+```
+
+# Make cross-correlation and joint analysis measurements
+
+## Compute mode-mixing matrices and measure Cls
+```
+python make_all_shear_tSZ_measurements.py
+```
+
+## Compute covariance mode-mixing matrices
+Run for both TETE and EETE if joint analysis with cosmic shear is required.
+```
+./namaster_covariance_mcm.sh
+```
+
+## Compute auto-spectrum of foreground map for covariance
+```
+python compute_foreground_cov_Cls.py
+```
+
+## Compute Gaussian covariance matrices
+```
+python make_all_shear_tSZ_gaussian_covariance_matrices.py
+```
+
+## Assemble data and covariances into single files for likelihood
+```
+python assemble_joint_data_and_covariance_files.py
+```
+
+## Compute CIB-shear cross-correlation and covariance
+```
+python reduce_CIB_data.py
 ```

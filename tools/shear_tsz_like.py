@@ -129,6 +129,9 @@ def setup(options):
     data_vector = np.concatenate(data_vector)
     data_vector_mask = np.concatenate(data_vector_mask)
 
+    if cov.shape[0] != len(data_vector_mask):
+        raise RuntimeError("Missmatch in covariance and mask shape")
+
     cov = cov[np.ix_(data_vector_mask, data_vector_mask)]
     inv_cov = np.linalg.inv(cov)
 
