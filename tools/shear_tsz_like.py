@@ -154,7 +154,7 @@ def setup(options):
                                     "")
 
     binned_suffix = options.get_string(option_section,
-                                       "binned_section_suffix", "")
+                                       "binned_section_suffix", "binned")
 
     return (data_vector, inv_cov, window_functions,
             indices, do_cosmic_shear, do_shear_y,
@@ -183,6 +183,8 @@ def execute(block, config):
 
             Cl_EE_binned = np.einsum("ibjl,jl->ib",
                                      B, [Cl_EE, Cl_0, Cl_0, Cl_0])[0]
+            block[section_names["shear_shear"] + "_" + binned_suffix,
+                                f"bin_{idx_1+1}_{idx_2+1}"] = Cl_EE_binned
             mu.append(Cl_EE_binned)
 
     if do_shear_y:
@@ -215,9 +217,13 @@ def execute(block, config):
                 Cl_CIB = block[section_names["shear_y_cib"], tag]
                 Cl_TE_binned += Cl_CIB
 
+            block[section_names["shear_y"] + "_" + binned_suffix,
+                                f"bin_{idx+1}_1"] = Cl_TE_binned
+
             mu.append(Cl_TE_binned)
 
     mu = np.concatenate(mu)
+    block[names.data_vector, like_name+"_theory_vector_unmasked"] = mu
     mu = mu[data_vector_mask]
 
     r = data_vector - mu
