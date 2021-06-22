@@ -52,6 +52,8 @@ def make_binning_operator(x, x_min, x_max, n_bin, weights=None,
 def create_beam_operator(ell, fwhm=None, fwhm_map=None, fwhm_target=None):
     if fwhm is None and fwhm_target is not None:
         fwhm_sq = fwhm_target**2 - fwhm_map**2
+    else:
+        fwhm_sq = fwhm**2
 
     sigma_sq = fwhm_sq * (1/60.0/180.0*PI/(2.0*np.sqrt(2.0*np.log(2.0))))**2
     op = np.diag(np.exp(-0.5 * ell**2 * sigma_sq))
