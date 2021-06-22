@@ -4,21 +4,38 @@ import os
 
 if __name__ == "__main__":
     workspace_path_EE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
-                        "shear_KiDS1000_shear_KiDS1000/")
+                         "shear_KiDS1000_shear_KiDS1000_cel/")
     workspace_path_TE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
-                        "shear_KiDS1000_y_milca/")
+                         "shear_KiDS1000_cel_y_ACT_BN/")
 
-    Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",  # noqa: E501
-                    "shear-foreground", "../results/measurements/shear_KiDS1000_y_milca/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",    # noqa: E501
-                    "foreground-foreground", "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]     # noqa: E501
+    # Planck milca
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",  # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_y_milca/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",    # noqa: E501
+    #                 "foreground-foreground", "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]     # noqa: E501
+    # output_path = "../results/measurements/shear_KiDS1000_y_milca/cov/"
+    # Ziang's map
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_y_ziang_nocib/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",       # noqa: E501
+    #                 "foreground-foreground", "../results/measurements/y_ziang_nocib_y_ziang_nocib/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
+    # output_path = "../results/measurements/shear_KiDS1000_y_ziang_nocib/cov/"
+    # ACT BN
+    Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501
+                    "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_Cls/Cl_cov_{}-{}.npz",       # noqa: E501
+                    "foreground-foreground", "../results/measurements/y_ACT_BN_y_ACT_BN/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
+    output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov/"
+    # ACT BN nocib
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/cov_Cls/Cl_cov_{}-{}.npz",       # noqa: E501
+    #                 "foreground-foreground", "../results/measurements/y_ACT_BN_nocib_y_ACT_BN_nocib/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
+    # output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/cov/"
 
-    output_path = "../results/measurements/shear_KiDS1000_y_milca/cov/"
+    os.makedirs(output_path, exist_ok=True)
 
     n_shear_field = 5
 
     os.environ["OMP_NUM_THREADS"] = "44"
 
-    for cov_block in ["TETE", "EETE"]:
+    for cov_block in ["EETE"]:
         print("Cov block: ", cov_block)
         if cov_block == "EETE":
             cov_fields_a = "shear-shear"

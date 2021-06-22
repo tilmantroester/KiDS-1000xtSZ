@@ -11,22 +11,30 @@ from misc_utils import file_header  # noqa: E402
 if __name__ == "__main__":
     n_z = 5
 
-    covariance_paths = {"EEEE": "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov/",
-                        "TETE": "../results/measurements/shear_KiDS1000_y_milca/cov/",
-                        "EETE": "../results/measurements/shear_KiDS1000_y_milca/cov/"}
-    data_Cl_path = {"EE": "../results/measurements/shear_KiDS1000_shear_KiDS1000/data/",
-                    "TE": "../results/measurements/shear_KiDS1000_y_milca/data/"}
+    base_path_EE = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
+    base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"
 
-    Cl_file = {"EE": "../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/Cl_EE_gal.txt",
-               "BB": "../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/Cl_BB_gal.txt",
-               "TE": "../results/measurements/shear_KiDS1000_y_milca/likelihood/Cl_TE_gal.txt",
-               "TB": "../results/measurements/shear_KiDS1000_y_milca/likelihood/Cl_TB_gal.txt"}
+    Cl_suffix = "cel"
 
-    covariance_files = {"EEEE": "../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/covariance_gaussian_EE.txt",
-                        "BBBB": "../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/covariance_gaussian_BB.txt",
-                        "TETE": "../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_gaussian_TE.txt",
-                        "TBTB": "../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_gaussian_TB.txt",
-                        "joint": "../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_gaussian_EE-TE.txt"}
+    covariance_paths = {"EEEE": os.path.join(base_path_EE, "cov/"),
+                        "TETE": os.path.join(base_path_TE, "cov/"),
+                        "EETE": os.path.join(base_path_TE, "cov/")}
+    data_Cl_path = {"EE": os.path.join(base_path_EE, "data/"),
+                    "TE": os.path.join(base_path_TE, "data/")}
+
+    Cl_file = {"EE": os.path.join(base_path_EE, f"likelihood/Cl_EE_gal.txt"),
+               "BB": os.path.join(base_path_EE, f"likelihood/Cl_BB_gal.txt"),
+               "TE": os.path.join(base_path_TE, f"likelihood/Cl_TE_{Cl_suffix}.txt"),
+               "TB": os.path.join(base_path_TE, f"likelihood/Cl_TB_{Cl_suffix}.txt")}
+
+    covariance_files = {"EEEE": os.path.join(base_path_EE, "likelihood/covariance_gaussian_EE.txt"),
+                        "BBBB": os.path.join(base_path_EE, "likelihood/covariance_gaussian_BB.txt"),
+                        "TETE": os.path.join(base_path_TE, "likelihood/covariance_gaussian_TE.txt"),
+                        "TBTB": os.path.join(base_path_TE, "likelihood/covariance_gaussian_TB.txt"),
+                        "joint": os.path.join(base_path_TE, "likelihood/covariance_gaussian_EE-TE.txt")}
+    
+    os.makedirs(os.path.split(Cl_file["EE"])[0], exist_ok=True)
+    os.makedirs(os.path.split(Cl_file["TE"])[0], exist_ok=True)
 
     field_idx_EE = [(i, j) for i in range(n_z)
                     for j in range(i+1)]
@@ -66,7 +74,7 @@ if __name__ == "__main__":
 
     for i, (idx_a1, idx_a2) in enumerate(field_idx_TE):
         d = np.load(os.path.join(data_Cl_path["TE"],
-                                 f"Cl_gal_{idx_a1}-{idx_a2}.npz"))
+                                 f"Cl_{Cl_suffix}_{idx_a1}-{idx_a2}.npz"))
         ell["TE"] = d["ell_eff"]
         ell["TB"] = d["ell_eff"]
         Cl["TE"].append(d["Cl_decoupled"][0])
