@@ -214,6 +214,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--foreground-map")
     parser.add_argument("--foreground-mask")
+    parser.add_argument("--foreground-beam")
 
     parser.add_argument("--shear-catalogs", nargs="+")
 
@@ -390,6 +391,13 @@ if __name__ == "__main__":
         w_map[probe][w_map[probe] == healpy.UNSEEN] = 0
 
         if compute_data_Cls:
+            if args.foreground_beam is not None:
+                print("Loading beam file: ", args.foreground_beam)
+                beam = np.loadtxt(args.foreground_beam)
+                if beam.shape[0] != 3*nside:
+                    raise ValueError("Beam has wrong number of entries.")
+            else:
+                beam = None
             print("  Loading foreground map: ", args.foreground_map)
             T_map = healpy.read_map(args.foreground_map, verbose=False)
             T_map[T_map == healpy.UNSEEN] = 0
@@ -397,6 +405,7 @@ if __name__ == "__main__":
             field[probe] = nmt.NmtField(w_map[probe],
                                         [T_map],
                                         spin=0,
+                                        beam=beam,
                                         n_iter=n_iter)
 
     # Loading catalogs

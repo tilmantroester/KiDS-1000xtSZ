@@ -14,15 +14,15 @@ if __name__ == "__main__":
                                       "data/pymaster_bandpower_windows_{}-{}.npy")              # noqa: E501
 
     # Planck milca
-    # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"           # noqa: E501
-    #                          "data/Cl_gal_{}-{}.npz")
-    # Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"            # noqa: E501
-    #                         "cov_Cls/Cl_cov_CCL_gal_{}-{}.npz")
+    Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"           # noqa: E501
+                             "data/Cl_gal_beam_deconv_{}-{}.npz")
+    Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"            # noqa: E501
+                            "cov_Cls/Cl_gal_cov_beam_deconv_{}-{}.npz")
     # Planck nilc
-    Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_nilc/"           # noqa: E501
-                             "data/Cl_gal_{}-{}.npz")
-    Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_nilc/"            # noqa: E501
-                            "cov_Cls/Cl_cov_{}-{}.npz")
+    # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_nilc/"           # noqa: E501
+    #                          "data/Cl_gal_{}-{}.npz")
+    # Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_nilc/"            # noqa: E501
+    #                         "cov_Cls/Cl_cov_{}-{}.npz")
     # Ziang's CIB deprojected map
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_ziang_nocib/"           # noqa: E501
     #                          "data/Cl_gal_{}-{}.npz")
@@ -52,12 +52,15 @@ if __name__ == "__main__":
                          "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.7-0.9.npz",     # noqa: E501
                          "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.9-1.2.npz"]     # noqa: E501
 
+    foreground_beam = None
+    
     # Planck milca
-    # foreground_map = "../data/y_maps/polspice/milca/triplet.fits"
-    # foreground_mask = "../data/y_maps/polspice/milca/singlet_mask.fits"
+    foreground_map = "../data/y_maps/polspice/milca/triplet.fits"
+    foreground_mask = "../data/y_maps/polspice/milca/singlet_mask.fits"
+    foreground_beam = "../data/xcorr/beams/beam_Planck.txt"
     # Planck nilc
-    foreground_map = "../data/y_maps/Planck_processed/nilc_full.fits"
-    foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
+    # foreground_map = "../data/y_maps/Planck_processed/nilc_full.fits"
+    # foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
     # Ziang's CIB deprojected map
     # foreground_map = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_v1.02_bp.fits"  # noqa: E501
     # foreground_mask = "../data/y_maps/polspice/milca/singlet_mask.fits"
@@ -68,16 +71,16 @@ if __name__ == "__main__":
     # foreground_map = "../data/y_maps/ACT/BN_deproject_cib.fits"
     # foreground_mask = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
 
-    raw_ell_file = "../runs/cov_theory_predictions_run0/output/data_block/shear_y_cl_beam_pixwin/ell.txt"  # noqa: E501
+    raw_ell_file = "../runs/cov_theory_predictions_run2_beam10/output/data_block/shear_y_cl/ell.txt"  # noqa: E501
 
-    raw_Cl_files = ["../runs/cov_theory_predictions_run0/output/data_block/shear_y_cl_beam_pixwin/bin_1_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run0/output/data_block/shear_y_cl_beam_pixwin/bin_2_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run0/output/data_block/shear_y_cl_beam_pixwin/bin_3_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run0/output/data_block/shear_y_cl_beam_pixwin/bin_4_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run0/output/data_block/shear_y_cl_beam_pixwin/bin_5_1.txt",  # noqa: E501
+    raw_Cl_files = ["../runs/cov_theory_predictions_run2_beam10/output/data_block/shear_y_cl/bin_1_1.txt",  # noqa: E501
+                    "../runs/cov_theory_predictions_run2_beam10/output/data_block/shear_y_cl/bin_2_1.txt",  # noqa: E501
+                    "../runs/cov_theory_predictions_run2_beam10/output/data_block/shear_y_cl/bin_3_1.txt",  # noqa: E501
+                    "../runs/cov_theory_predictions_run2_beam10/output/data_block/shear_y_cl/bin_4_1.txt",  # noqa: E501
+                    "../runs/cov_theory_predictions_run2_beam10/output/data_block/shear_y_cl/bin_5_1.txt",  # noqa: E501
                     ]
 
-    os.environ["OMP_NUM_THREADS"] = "44"
+    os.environ["OMP_NUM_THREADS"] = "20"
 
     field_idx = [(i, 0) for i in range(len(catalog_files))]
 
@@ -95,6 +98,8 @@ if __name__ == "__main__":
 
         cmd += ["--foreground-map", foreground_map]
         cmd += ["--foreground-mask", foreground_mask]
+        if foreground_beam is not None:
+            cmd += ["--foreground-beam", foreground_beam]
 
         workspace_file = workspace_file_template.format(*idx)
         cmd += ["--pymaster-workspace", workspace_file]

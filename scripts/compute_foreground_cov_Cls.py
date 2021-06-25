@@ -16,9 +16,17 @@ if __name__ == "__main__":
 
     beam = None
 
+    # Planck milca
+    foreground_map_file = "../data/y_maps/polspice/milca/triplet.fits"
+    foreground_mask_file = "../data/y_maps/polspice/milca/singlet_mask.fits"
+    beam = "../data/xcorr/beams/beam_Planck.txt"
+    cov_Cls_file = "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_beam_deconv_raw_0-0.npz"                # noqa: E501
+    cov_Cls_smoothed_file = "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_beam_deconv_smoothed_0-0.npz"  # noqa: E501
     # Planck NILC
-    foreground_map_file = "../data/y_maps/Planck_processed/nilc_full.fits"
-    foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
+    # foreground_map_file = "../data/y_maps/Planck_processed/nilc_full.fits"
+    # foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
+    # cov_Cls_file = "../results/measurements/y_nilc_y_nilc/cov_Cls/Cl_cov_beam_deconv_raw_0-0.npz"                # noqa: E501
+    # cov_Cls_smoothed_file = "../results/measurements/y_nilc_y_nilc/cov_Cls/Cl_cov_beam_deconv_smoothed_0-0.npz"  # noqa: E501
     # Ziang nocib
     # foreground_map_file = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_v1.02_bp.fits"      # noqa: E501
     # foreground_mask_file = "../data/y_maps/Planck_processed/ziang/ycibmask_G.fits"                                 # noqa: E501
@@ -29,13 +37,13 @@ if __name__ == "__main__":
     # foreground_map_file = "../data/y_maps/ACT/BN_deproject_cib.fits"
     # foreground_mask_file = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
 
-    cov_Cls_file = "../results/measurements/y_nilc_y_nilc/cov_Cls/Cl_cov_raw_0-0.npz"                # noqa: E501
-    cov_Cls_smoothed_file = "../results/measurements/y_nilc_y_nilc/cov_Cls/Cl_cov_smoothed_0-0.npz"  # noqa: E501
-
     os.makedirs(os.path.split(cov_Cls_file)[0], exist_ok=True)
 
     binning_operator = np.loadtxt(binning_operator_file)
     ell = np.arange(binning_operator.size)
+
+    if beam is not None:
+        beam = np.loadtxt(beam)
 
     nmt_bins = nmt.NmtBin(nside=nside, bpws=binning_operator,
                           ells=ell, weights=2*ell+1)

@@ -12,13 +12,13 @@ if __name__ == "__main__":
     n_z = 5
 
     base_path_EE = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
-    base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"
+    base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
 
-    Cl_suffix = "cel"
+    Cl_suffix = "gal_beam_deconv"
 
     covariance_paths = {"EEEE": os.path.join(base_path_EE, "cov/"),
-                        "TETE": os.path.join(base_path_TE, "cov/"),
-                        "EETE": os.path.join(base_path_TE, "cov/")}
+                        "TETE": os.path.join(base_path_TE, "cov_beam_deconv/"),
+                        "EETE": os.path.join(base_path_TE, "cov_beam_deconv/")}
     data_Cl_path = {"EE": os.path.join(base_path_EE, "data/"),
                     "TE": os.path.join(base_path_TE, "data/")}
 
@@ -29,9 +29,22 @@ if __name__ == "__main__":
 
     covariance_files = {"EEEE": os.path.join(base_path_EE, "likelihood/covariance_gaussian_EE.txt"),
                         "BBBB": os.path.join(base_path_EE, "likelihood/covariance_gaussian_BB.txt"),
-                        "TETE": os.path.join(base_path_TE, "likelihood/covariance_gaussian_TE.txt"),
-                        "TBTB": os.path.join(base_path_TE, "likelihood/covariance_gaussian_TB.txt"),
-                        "joint": os.path.join(base_path_TE, "likelihood/covariance_gaussian_EE-TE.txt")}
+                        "TETE": os.path.join(base_path_TE, f"likelihood/covariance_{Cl_suffix}_gaussian_TE.txt"),
+                        "TBTB": os.path.join(base_path_TE, f"likelihood/covariance_{Cl_suffix}_gaussian_TB.txt"),
+                        "joint": os.path.join(base_path_TE, f"likelihood/covariance_{Cl_suffix}_gaussian_EE-TE.txt")}
+
+    NG_covariance_files = None
+    NG_covariance_files = {"EEEE":  {"m": os.path.join(base_path_EE, "likelihood/covariance_m_EE.txt"),
+                                     "SSC-disc": os.path.join(base_path_EE, "likelihood/covariance_SSC_disc_EE.txt"),
+                                     "SSC-mask": os.path.join(base_path_EE, "likelihood/covariance_SSC_mask_EE.txt")},
+                           "TETE":  {#"m": os.path.join(base_path_TE, "likelihood/covariance_m_TE.txt"),
+                                     "SSC-disc": os.path.join(base_path_TE, "likelihood/covariance_hmx_SSC_disc_TE.txt"),
+                                     #"SSC-mask": os.path.join(base_path_TE, "likelihood/covariance_hmx_SSC_mask_TE.txt"),
+                                     "cNG-1h": os.path.join(base_path_TE, "likelihood/covariance_hmx_cNG_1h_TE.txt")},
+                           "joint": {#"m": os.path.join(base_path_TE, "likelihood/covariance_m_TE.txt"),
+                                     "SSC-disc": os.path.join(base_path_TE, "likelihood/covariance_hmx_SSC_disc_EE+TE.txt"),
+                                     #"SSC-mask": os.path.join(base_path_TE, "likelihood/covariance_hmx_SSC_mask_EE+TE.txt"),
+                                     "cNG-1h": os.path.join(base_path_TE, "likelihood/covariance_hmx_cNG_1h_EE+TE.txt")}}
     
     os.makedirs(os.path.split(Cl_file["EE"])[0], exist_ok=True)
     os.makedirs(os.path.split(Cl_file["TE"])[0], exist_ok=True)
@@ -41,26 +54,38 @@ if __name__ == "__main__":
     field_idx_TE = [(i, 0) for i in range(n_z)]
 
     Cl_headers = {"EE": (f"ell, Cl_EE (tomographic bins "
-                         f"{', '.join([str(b) for b in field_idx_EE])})"),
+                         f"{', '.join([str(b) for b in field_idx_EE])})\n"
+                         f"Data path: {data_Cl_path['EE']}"),
                   "BB": (f"ell, Cl_BB (tomographic bins "
-                         f"{', '.join([str(b) for b in field_idx_EE])})"),
+                         f"{', '.join([str(b) for b in field_idx_EE])})\n"
+                         f"Data path: {data_Cl_path['EE']}"),
                   "TE": (f"ell, Cl_TE (tomographic bins "
-                         f"{', '.join([str(b) for b in field_idx_TE])})"),
-                  "TB": (f"ell, Cl_BB (tomographic bins "
-                         f"{', '.join([str(b) for b in field_idx_TE])})")}
+                         f"{', '.join([str(b) for b in field_idx_TE])})\n"
+                         f"Data path: {data_Cl_path['TE']}"),
+                  "TB": (f"ell, Cl_TB (tomographic bins "
+                         f"{', '.join([str(b) for b in field_idx_TE])})\n"
+                         f"Data path: {data_Cl_path['TE']}")}
     cov_headers = {"EEEE": (f"Covariance of Cl_EE (tomographic bins "
-                            f"{', '.join([str(b) for b in field_idx_EE])})"),
+                            f"{', '.join([str(b) for b in field_idx_EE])})\n"
+                            f"Data path: {covariance_paths['EEEE']}"),
                    "BBBB": (f"Covariance of Cl_BB (tomographic bins "
-                            f"{', '.join([str(b) for b in field_idx_EE])})"),
+                            f"{', '.join([str(b) for b in field_idx_EE])})\n"
+                            f"Data path: {covariance_paths['EEEE']}"),
                    "TETE": (f"Covariance of Cl_TE (tomographic bins "
-                            f"{', '.join([str(b) for b in field_idx_TE])})"),
+                            f"{', '.join([str(b) for b in field_idx_TE])})\n"
+                            f"Data path: {covariance_paths['TETE']}"),
                    "TBTB": (f"Covariance of Cl_TB (tomographic bins "
-                            f"{', '.join([str(b) for b in field_idx_TE])})"),
+                            f"{', '.join([str(b) for b in field_idx_TE])})\n"
+                            f"Data path: {covariance_paths['TETE']}"),
                    "joint": (f"Covariance of Cl_EE, Cl_TE "
                              f"(tomographic shear-shear bins: "
                              f"{', '.join([str(b) for b in field_idx_EE])}"
                              f" tomographic shear-foreground bins: "
-                             f"{', '.join([str(b) for b in field_idx_TE])})")}
+                             f"{', '.join([str(b) for b in field_idx_TE])})\n"
+                             f"Data paths:\n"
+                             f"EEEE:{covariance_paths['EEEE']}\n"
+                             f"TETE:{covariance_paths['TETE']}\n"
+                             f"EETE:{covariance_paths['EETE']}")}
 
     Cl = {"EE": [], "BB": [], "TE": [], "TB": []}
     ell = {}
