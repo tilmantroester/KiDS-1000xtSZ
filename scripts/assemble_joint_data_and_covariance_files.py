@@ -12,13 +12,17 @@ if __name__ == "__main__":
     n_z = 5
 
     base_path_EE = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
-    base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
+    base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
 
-    Cl_suffix = "gal_beam_deconv"
+    probes = ["TE"]
+    cov_blocks = ["TETE", "TBTB"]
+
+    Cl_suffix = "gal"
 
     covariance_paths = {"EEEE": os.path.join(base_path_EE, "cov/"),
-                        "TETE": os.path.join(base_path_TE, "cov_beam_deconv/"),
-                        "EETE": os.path.join(base_path_TE, "cov_beam_deconv/")}
+                        "TETE": os.path.join(base_path_TE, "cov/"),
+                        "EETE": os.path.join(base_path_TE, "cov/")}
     data_Cl_path = {"EE": os.path.join(base_path_EE, "data/"),
                     "TE": os.path.join(base_path_TE, "data/")}
 
@@ -46,8 +50,8 @@ if __name__ == "__main__":
                                      #"SSC-mask": os.path.join(base_path_TE, "likelihood/covariance_hmx_SSC_mask_EE+TE.txt"),
                                      "cNG-1h": os.path.join(base_path_TE, "likelihood/covariance_hmx_cNG_1h_EE+TE.txt")}}
     
-    os.makedirs(os.path.split(Cl_file["EE"])[0], exist_ok=True)
-    os.makedirs(os.path.split(Cl_file["TE"])[0], exist_ok=True)
+    for probe in probes:
+        os.makedirs(os.path.split(Cl_file[probe])[0], exist_ok=True)
 
     field_idx_EE = [(i, j) for i in range(n_z)
                     for j in range(i+1)]
@@ -105,10 +109,16 @@ if __name__ == "__main__":
         Cl["TE"].append(d["Cl_decoupled"][0])
         Cl["TB"].append(d["Cl_decoupled"][1])
 
-    for probe in ["EE", "BB", "TE", "TB"]:
-        data = np.vstack([ell[probe]] + Cl[probe]).T
-        header = file_header(Cl_headers[probe])
-        np.savetxt(Cl_file[probe], data, header=header)
+    if "EE" in probes:
+        for probe in ["EE", "BB"]:
+            data = np.vstack([ell[probe]] + Cl[probe]).T
+            header = file_header(Cl_headers[probe])
+            np.savetxt(Cl_file[probe], data, header=header)
+    if "TE" in probes:
+        for probe in ["TE", "TB"]:
+            data = np.vstack([ell[probe]] + Cl[probe]).T
+            header = file_header(Cl_headers[probe])
+            np.savetxt(Cl_file[probe], data, header=header)
 
     n_ell_bin_EE = len(ell["EE"])
     n_ell_bin_TE = len(ell["TE"])
@@ -121,56 +131,59 @@ if __name__ == "__main__":
                     "TBTB": np.zeros((n_TE, n_TE)),
                     "EETE": np.zeros((n_EE, n_TE)),
                     "BBTB": np.zeros((n_EE, n_TE))}
-    # EEEE/BBBB
-    for i, (idx_a1, idx_a2) in enumerate(field_idx_EE):
-        for j, (idx_b1, idx_b2) in enumerate(field_idx_EE[:i+1]):
-            c = np.load(os.path.join(
-                        covariance_paths["EEEE"],
-                        f"cov_shear_shear_{idx_a1}-{idx_a2}_"
-                        f"{idx_b1}-{idx_b2}.npz"))["ssss"].reshape(
-                                                    n_ell_bin_EE, 4,
-                                                    n_ell_bin_EE, 4)
+    if "EEEE" in cov_blocks:
+        # EEEE/BBBB
+        for i, (idx_a1, idx_a2) in enumerate(field_idx_EE):
+            for j, (idx_b1, idx_b2) in enumerate(field_idx_EE[:i+1]):
+                c = np.load(os.path.join(
+                            covariance_paths["EEEE"],
+                            f"cov_shear_shear_{idx_a1}-{idx_a2}_"
+                            f"{idx_b1}-{idx_b2}.npz"))["ssss"].reshape(
+                                                        n_ell_bin_EE, 4,
+                                                        n_ell_bin_EE, 4)
 
-            cov_gaussian["EEEE"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
-                                 j*n_ell_bin_EE:(j+1)*n_ell_bin_EE] = c[:, 0, :, 0]
-            cov_gaussian["BBBB"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
-                                 j*n_ell_bin_EE:(j+1)*n_ell_bin_EE] = c[:, 3, :, 3]
+                cov_gaussian["EEEE"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
+                                    j*n_ell_bin_EE:(j+1)*n_ell_bin_EE] = c[:, 0, :, 0]
+                cov_gaussian["BBBB"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
+                                    j*n_ell_bin_EE:(j+1)*n_ell_bin_EE] = c[:, 3, :, 3]
 
-    # TETE/TBTB
-    for i, (idx_a1, idx_a2) in enumerate(field_idx_TE):
-        for j, (idx_b1, idx_b2) in enumerate(field_idx_TE[:i+1]):
-            c = np.load(os.path.join(
-                        covariance_paths["TETE"],
-                        f"cov_shear_{idx_a1}_foreground_{idx_a2}_"
-                        f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["ssss"]
-            c = c.reshape(n_ell_bin_TE, 2, n_ell_bin_TE, 2)
+    if "TETE" in cov_blocks:
+        # TETE/TBTB
+        for i, (idx_a1, idx_a2) in enumerate(field_idx_TE):
+            for j, (idx_b1, idx_b2) in enumerate(field_idx_TE[:i+1]):
+                c = np.load(os.path.join(
+                            covariance_paths["TETE"],
+                            f"cov_shear_{idx_a1}_foreground_{idx_a2}_"
+                            f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["ssss"]
+                c = c.reshape(n_ell_bin_TE, 2, n_ell_bin_TE, 2)
 
-            cov_gaussian["TETE"][i*n_ell_bin_TE:(i+1)*n_ell_bin_TE,
-                                 j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 0, :, 0]
-            cov_gaussian["TBTB"][i*n_ell_bin_TE:(i+1)*n_ell_bin_TE,
-                                 j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 1, :, 1]
+                cov_gaussian["TETE"][i*n_ell_bin_TE:(i+1)*n_ell_bin_TE,
+                                    j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 0, :, 0]
+                cov_gaussian["TBTB"][i*n_ell_bin_TE:(i+1)*n_ell_bin_TE,
+                                    j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 1, :, 1]
 
-    # EETE/BBTB (in the upper triangle)
-    for i, (idx_a1, idx_a2) in enumerate(field_idx_EE):
-        for j, (idx_b1, idx_b2) in enumerate(field_idx_TE):
-            c = np.load(os.path.join(
-                        covariance_paths["EETE"],
-                        f"cov_shear_{idx_a1}_shear_{idx_a2}_"
-                        f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["ssss"]
-            c = c.reshape(n_ell_bin_EE, 4, n_ell_bin_TE, 2)
+    if "EETE" in cov_blocks:
+        # EETE/BBTB (in the upper triangle)
+        for i, (idx_a1, idx_a2) in enumerate(field_idx_EE):
+            for j, (idx_b1, idx_b2) in enumerate(field_idx_TE):
+                c = np.load(os.path.join(
+                            covariance_paths["EETE"],
+                            f"cov_shear_{idx_a1}_shear_{idx_a2}_"
+                            f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["ssss"]
+                c = c.reshape(n_ell_bin_EE, 4, n_ell_bin_TE, 2)
 
-            cov_gaussian["EETE"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
-                                 j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 0, :, 0]
-            cov_gaussian["BBTB"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
-                                 j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 3, :, 1]
+                cov_gaussian["EETE"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
+                                    j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 0, :, 0]
+                cov_gaussian["BBTB"][i*n_ell_bin_EE:(i+1)*n_ell_bin_EE,
+                                    j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 3, :, 1]
+    if "joint" in cov_blocks:
+        cov_gaussian["joint"] = np.zeros((n_EE+n_TE, n_EE+n_TE))
 
-    cov_gaussian["joint"] = np.zeros((n_EE+n_TE, n_EE+n_TE))
+        cov_gaussian["joint"][:n_EE, :n_EE] = cov_gaussian["EEEE"]
+        cov_gaussian["joint"][n_EE:n_EE+n_TE, :n_EE] = cov_gaussian["EETE"].T
+        cov_gaussian["joint"][n_EE:n_EE+n_TE, n_EE:n_EE+n_TE] = cov_gaussian["TETE"]
 
-    cov_gaussian["joint"][:n_EE, :n_EE] = cov_gaussian["EEEE"]
-    cov_gaussian["joint"][n_EE:n_EE+n_TE, :n_EE] = cov_gaussian["EETE"].T
-    cov_gaussian["joint"][n_EE:n_EE+n_TE, n_EE:n_EE+n_TE] = cov_gaussian["TETE"]
-
-    for cov_block in ["EEEE", "BBBB", "TETE", "TBTB", "joint"]:
+    for cov_block in cov_blocks:
         c = cov_gaussian[cov_block]
         cov_gaussian[cov_block][np.triu_indices_from(c, k=1)] = \
             c.T[np.triu_indices_from(c, k=1)]

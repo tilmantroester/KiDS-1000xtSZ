@@ -17,11 +17,11 @@ if __name__ == "__main__":
     beam = None
 
     # Planck milca
-    foreground_map_file = "../data/y_maps/polspice/milca/triplet.fits"
-    foreground_mask_file = "../data/y_maps/polspice/milca/singlet_mask.fits"
-    beam = "../data/xcorr/beams/beam_Planck.txt"
-    cov_Cls_file = "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_beam_deconv_raw_0-0.npz"                # noqa: E501
-    cov_Cls_smoothed_file = "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_beam_deconv_smoothed_0-0.npz"  # noqa: E501
+    # foreground_map_file = "../data/y_maps/polspice/milca/triplet.fits"
+    # foreground_mask_file = "../data/y_maps/polspice/milca/singlet_mask.fits"
+    # beam = "../data/xcorr/beams/beam_Planck.txt"
+    # cov_Cls_file = "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_beam_deconv_raw_0-0.npz"                # noqa: E501
+    # cov_Cls_smoothed_file = "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_beam_deconv_smoothed_0-0.npz"  # noqa: E501
     # Planck NILC
     # foreground_map_file = "../data/y_maps/Planck_processed/nilc_full.fits"
     # foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
@@ -36,6 +36,17 @@ if __name__ == "__main__":
     # ACT BN nocib
     # foreground_map_file = "../data/y_maps/ACT/BN_deproject_cib.fits"
     # foreground_mask_file = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
+
+    # Planck 100 GHz HFI
+    # foreground_map_file = "/disk09/ttroester/Planck/frequency_maps/HFI_SkyMap_100_2048_R3.01_full.fits"
+    # foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
+    # cov_Cls_file = "../results/measurements/100GHz_HFI_100GHz_HFI/cov_Cls/Cl_cov_raw_0-0.npz"                # noqa: E501
+    # cov_Cls_smoothed_file = "../results/measurements/100GHz_HFI_100GHz_HFI/cov_Cls/Cl_cov_smoothed_0-0.npz"  # noqa: E501
+    # Planck 545 GHz CIB
+    foreground_map_file = "../data/CIB_maps/CIB-GNILC-F545_beam10.fits"
+    foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
+    cov_Cls_file = "../results/measurements/545GHz_CIB_545GHz_CIB/cov_Cls/Cl_cov_raw_0-0.npz"                # noqa: E501
+    cov_Cls_smoothed_file = "../results/measurements/545GHz_CIB_545GHz_CIB/cov_Cls/Cl_cov_smoothed_0-0.npz"  # noqa: E501
 
     os.makedirs(os.path.split(cov_Cls_file)[0], exist_ok=True)
 
