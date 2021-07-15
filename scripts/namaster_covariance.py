@@ -77,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--n-iter")
     parser.add_argument("--nside")
 
+    parser.add_argument("--signal-signal", action="store_true")
     parser.add_argument("--exact-noise-noise", action="store_true")
     parser.add_argument("--exact-noise-signal", action="store_true")
 
@@ -114,8 +115,11 @@ if __name__ == "__main__":
     
     print("Computing covariance block ", cov_block)
 
+    do_signal_signal = args.signal_signal
     do_exact_noise_noise = args.exact_noise_noise
     do_exact_noise_signal = args.exact_noise_signal
+    if do_signal_signal:
+        printflush("Will compute signal-signal terms")
     if do_exact_noise_noise:
         printflush("Will compute exact noise-noise terms")
     if do_exact_noise_signal:
@@ -188,21 +192,23 @@ if __name__ == "__main__":
     for (idx_a1, idx_a2), (idx_b1, idx_b2) in cov_idx:
         printflush(f"  A {idx_a1}-{idx_a2}, B {idx_b1}-{idx_b2} "
                    f"({field_types})")
-
-        printflush("      Computing signal-signal covariance")
-        printflush("      ", end="")
-        if args.dry_run:
-            continue
-        create_general_nmt_covariance_workspace(
-                        idx_a1, idx_a2, idx_b1, idx_b2,
-                        *field_types,
-                        w_fields,
-                        pymaster_workspace_output_path)
+        if do_signal_signal:
+            printflush("      Computing signal-signal covariance")
+            printflush("      ", end="")
+            if args.dry_run:
+                continue
+            create_general_nmt_covariance_workspace(
+                            idx_a1, idx_a2, idx_b1, idx_b2,
+                            *field_types,
+                            w_fields,
+                            pymaster_workspace_output_path)
 
         if do_exact_noise_signal:
             if idx_a1 == idx_b1:
                 printflush("      Computing signal-noise covariance")
                 printflush("      ", end="")
+                if args.dry_run:
+                    continue
                 create_nmt_covariance_workspace(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 w_fields["shear"], w_fields["shear_noise"],
@@ -212,6 +218,8 @@ if __name__ == "__main__":
             if idx_a1 == idx_b2:
                 printflush("      Computing signal-noise covariance")
                 printflush("      ", end="")
+                if args.dry_run:
+                    continue
                 create_nmt_covariance_workspace(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 w_fields["shear"], w_fields["shear_noise"],
@@ -221,6 +229,8 @@ if __name__ == "__main__":
             if idx_a2 == idx_b1:
                 printflush("      Computing signal-noise covariance")
                 printflush("      ", end="")
+                if args.dry_run:
+                    continue
                 create_nmt_covariance_workspace(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 w_fields["shear"], w_fields["shear_noise"],
@@ -230,6 +240,8 @@ if __name__ == "__main__":
             if idx_a2 == idx_b2:
                 printflush("      Computing signal-noise covariance")
                 printflush("      ", end="")
+                if args.dry_run:
+                    continue
                 create_nmt_covariance_workspace(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 w_fields["shear"], w_fields["shear_noise"],
@@ -240,6 +252,8 @@ if __name__ == "__main__":
                     or (idx_a1 == idx_b2 and idx_a2 == idx_b1)):
                 printflush("      Computing noise-noise covariance")
                 printflush("      ", end="")
+                if args.dry_run:
+                    continue
                 create_nmt_covariance_workspace(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 w_fields["shear"], w_fields["shear_noise"],

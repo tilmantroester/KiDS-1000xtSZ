@@ -11,9 +11,8 @@ import sys
 sys.path.append("../tools/")
 
 from misc_utils import printflush
-
-
 from compute_cosmic_shear_covariance import compute_gaussian_covariance
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -58,21 +57,30 @@ if __name__ == "__main__":
 
     ell = np.arange(3*2048)
 
+    os.makedirs(args.output_path, exist_ok=True)
+    cov_filename = (f"cov_shear_noise_{idx_a1}_shear_noise_{idx_a2}_"
+                    f"shear_noise_{idx_b1}_shear_noise_{idx_b2}.npz")
+    cov_filename = os.path.join(args.output_path, cov_filename)
+    print("Saving covariance matrices to ", cov_filename)
+
     printflush("Computing covariance matrices")
     cov_matrix = {}
+
+    exact_noise_terms = [idx_a1 == idx_b1,
+                         idx_a1 == idx_b2,
+                         idx_a2 == idx_b1,
+                         idx_a2 == idx_b2]
+
     cov_matrix["nnnn"] = compute_gaussian_covariance(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 signal_terms=[False, False, False, False],
                                 noise_terms=[False, False, False, False],
-                                exact_noise_terms=[True, True, True, True],
+                                exact_noise_terms=exact_noise_terms,
                                 Cl_signal=None,
                                 Cl_noise=None,
                                 ell=ell,
                                 cov_wsp=cov_wsp["nnnn"],
                                 wsp_a=wsp_a, wsp_b=wsp_b)
+    cov_matrix["nnnn"] *= healpy.nside2pixarea(2048)**2
 
-    cov_filename = (f"cov_shear_noise_{idx_a1}_shear_noise_{idx_a2}_"
-                    f"shear_noise_{idx_b1}_shear_noise_{idx_b2}.npz")
-    cov_filename = os.path.join(args.output_path, cov_filename)
-    print("Saving covariance matrices to ", cov_filename)
     np.savez(cov_filename, **cov_matrix)

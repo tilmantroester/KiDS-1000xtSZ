@@ -27,11 +27,10 @@ def compute_gaussian_covariance(idx_a1, idx_a2, idx_b1, idx_b2,
                     (idx_a2, idx_b1),
                     (idx_a2, idx_b2)],
                    signal_terms, noise_terms, exact_noise_terms):
-        Cls[idx] = np.zeros_like(ell)
         if is_exact_noise:
-            Cls[idx] = [Cl_1, Cl_0, Cl_0, Cl_1]
+            Cls[idx] = np.array([Cl_1, Cl_0, Cl_0, Cl_1])
         else:
-            Cls[idx] = [Cl_0, Cl_0, Cl_0, Cl_0]
+            Cls[idx] = np.array([Cl_0, Cl_0, Cl_0, Cl_0])
             if is_signal:
                 Cls[idx] += Cl_signal[idx]
             if is_noise:
@@ -108,9 +107,31 @@ if __name__ == "__main__":
 
     printflush("Computing covariance matrices")
     cov_matrix = {}
+    cov_matrix["aaaa"] = compute_gaussian_covariance(
+                                idx_a1, idx_a2, idx_b1, idx_b2,
+                                signal_terms=[True, True, True, True],
+                                noise_terms=[True, True, True, True],
+                                exact_noise_terms=[False, False, False, False],
+                                Cl_signal=Cl_signal,
+                                Cl_noise=Cl_noise,
+                                ell=ell,
+                                cov_wsp=cov_wsp["ssss"],
+                                wsp_a=wsp_a, wsp_b=wsp_b)
+
     cov_matrix["ssss"] = compute_gaussian_covariance(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 signal_terms=[True, True, True, True],
+                                noise_terms=[False, False, False, False],
+                                exact_noise_terms=[False, False, False, False],
+                                Cl_signal=Cl_signal,
+                                Cl_noise=Cl_noise,
+                                ell=ell,
+                                cov_wsp=cov_wsp["ssss"],
+                                wsp_a=wsp_a, wsp_b=wsp_b)
+    
+    cov_matrix["nnnn"] = compute_gaussian_covariance(
+                                idx_a1, idx_a2, idx_b1, idx_b2,
+                                signal_terms=[False, False, False, False],
                                 noise_terms=[True, True, True, True],
                                 exact_noise_terms=[False, False, False, False],
                                 Cl_signal=Cl_signal,
