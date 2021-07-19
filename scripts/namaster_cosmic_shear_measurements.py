@@ -267,11 +267,11 @@ if __name__ == "__main__":
         print("Computing cross-correlation between "
               "two shear catalogs.")
         probes = ["A", "B"]
-        pins = {"A": 2, "B": 2}
+        spins = {"A": 2, "B": 2}
     else:
         print("Computing auto-correlation of shear catalog.")
         probes = ["A"]
-        pins = {"A": 2}
+        spins = {"A": 2}
 
     if args.Cl_signal_files is not None:
         print("Loading signal Cls from ", args.Cl_signal_files)

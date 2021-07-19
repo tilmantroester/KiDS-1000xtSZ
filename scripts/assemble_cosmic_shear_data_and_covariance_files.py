@@ -12,13 +12,13 @@ if __name__ == "__main__":
     n_z = 5
 
     covariance_path = ("../results/measurements/"
-                       "shear_KiDS1000_shear_KiDS1000/cov_exact_noise/")
+                       "shear_KiDS1000_shear_KiDS1000/cov_exact_noise_mixed_terms/")
     # covariance_file_template = f"cov_shear_shear_{idx_a1}-{idx_a2}_"
     #                            f"{idx_b1}-{idx_b2}.npz"
-    # covariance_file_template = ("cov_shear_{}_shear_{}_"
-    #                             "shear_{}_shear_{}.npz")
-    covariance_file_template = ("cov_shear_noise_{}_shear_noise_{}_"
-                                "shear_noise_{}_shear_noise_{}.npz")
+    covariance_file_template = ("cov_shear_{}_shear_{}_"
+                                "shear_{}_shear_{}.npz")
+    # covariance_file_template = ("cov_shear_noise_{}_shear_noise_{}_"
+    #                             "shear_noise_{}_shear_noise_{}.npz")
 
     data_Cl_path = ("../results/measurements/"
                     "shear_KiDS1000_shear_KiDS1000/data/")
@@ -26,8 +26,8 @@ if __name__ == "__main__":
     Cl_file = ("../results/measurements/"
                "shear_KiDS1000_shear_KiDS1000/likelihood/Cl_EE_gal.txt")
 
-    key = "nnnn"
-    tag = "exact_noise"
+    key = "mmmm"
+    tag = "exact_noise_mixed_terms"
 
     covariance_file = (f"../results/measurements/"
                        f"shear_KiDS1000_shear_KiDS1000/likelihood/"
@@ -60,6 +60,7 @@ if __name__ == "__main__":
                             idx_a1, idx_a2, idx_b1, idx_b2)
             cov_file = os.path.join(covariance_path, cov_file)
             if not os.path.isfile(cov_file):
+                print(f"No file {cov_file}. Skipping.")
                 continue
             c = np.load(cov_file)[key].reshape(n_ell_bin, 4,
                                                n_ell_bin, 4)[:, 0, :, 0]
