@@ -6,8 +6,9 @@ __pycache__
 
 logs/
 runs/
+proto_runs/
 results/
-# data/
+data/
 
 scripts/parsl/
 scripts/.scripts/

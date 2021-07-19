@@ -21,6 +21,30 @@ def load_cosmosis_params(output_path, section="cosmological_parameters"):
     return params
 
 
+def ccl2hmcode_cosmo(ccl_cosmo, pofk_lin_z, pofk_lin_k_h, pofk_lin,
+                     log10_T_heat=None):
+    hmcode_cosmo = pyhmcode.Cosmology()
+
+    hmcode_cosmo.om_m = ccl_cosmo["Omega_m"]
+    hmcode_cosmo.om_b = ccl_cosmo["Omega_b"]
+    hmcode_cosmo.om_v = ccl_cosmo["Omega_l"]
+    hmcode_cosmo.h = ccl_cosmo["h"]
+    hmcode_cosmo.ns = ccl_cosmo["n_s"]
+    sigma8 = ccl_cosmo["sigma8"]
+    if not np.isfinite(sigma8):
+        sigma8 = ccl.sigma8(ccl_cosmo)
+    hmcode_cosmo.sig8 = sigma8
+    hmcode_cosmo.m_nu = ccl_cosmo["m_nu"].sum()
+
+    if log10_T_heat is not None:
+        hmcode_cosmo.theat = 10**log10_T_heat
+
+    hmcode_cosmo.set_linear_power_spectrum(pofk_lin_k_h,
+                                           pofk_lin_z,
+                                           pofk_lin)
+    
+    return hmcode_cosmo
+
 class HaloProfileInterpolated(ccl.halos.HaloProfile):
     def __init__(self, interpolator, is_logk=True, is_logM=True,
                  is_logp=True, norm=None):
@@ -65,7 +89,8 @@ class HaloProfileInterpolated(ccl.halos.HaloProfile):
 
 
 class HMxProfileGenerator:
-    def __init__(self, hmcode_cosmo, a_arr, k_arr, verbose=False):
+    def __init__(self, hmcode_cosmo, a_arr, k_arr, fields=None,
+                 add_diffuse=False, verbose=False):
         self.hmcode_cosmo = hmcode_cosmo
         self.hmod = pyhmcode.Halomodel(
                         pyhmcode.HMx2020_matter_pressure_w_temp_scaling,
@@ -76,9 +101,13 @@ class HMxProfileGenerator:
 
         self.verbose = verbose
 
-        self.fields = [pyhmcode.field_matter,
-                       pyhmcode.field_cdm,
-                       pyhmcode.field_electron_pressure]
+        if fields is None:
+            self.fields = [pyhmcode.field_matter,
+                           pyhmcode.field_electron_pressure]
+        else:
+            self.fields = fields
+
+        self.add_diffuse = add_diffuse
 
         self._has_interpolator = False
         self._compute_tables()
@@ -102,11 +131,17 @@ class HMxProfileGenerator:
                 pyhmcode.hmx.init_windows(k, self.fields, len(self.fields),
                                           wk, self.hmod.n,
                                           self.hmod, self.hmcode_cosmo)
+                if self.add_diffuse:
+                    pyhmcode.hmx.add_smooth_component_to_windows(
+                                        self.fields, len(self.fields),
+                                        wk, self.hmod.n,
+                                        self.hmod, self.hmcode_cosmo)
                 profile_lut[:, a_idx, k_idx] = wk.T
 
-        # Turn electron pressure into physical units
-        pressure_idx = self.fields.index(pyhmcode.field_electron_pressure)
-        profile_lut[pressure_idx] *= self.a_arr[:, None, None]**-3
+        if pyhmcode.field_electron_pressure in self.fields:
+            # Turn electron pressure into physical units
+            pressure_idx = self.fields.index(pyhmcode.field_electron_pressure)
+            profile_lut[pressure_idx] *= self.a_arr[:, None, None]**-3
 
         profile_lut[profile_lut <= 1e-30] = 1e-30
 
@@ -156,8 +191,9 @@ class HMxProfileGenerator:
 
 
 class CovarianceCalculator:
-    def __init__(self, ccl_cosmo, lensing_nz, pofk_lin=None):
+    def __init__(self, ccl_cosmo, lensing_nz, log10_T_heat=None, pofk_lin=None):
         self.ccl_cosmo = ccl_cosmo
+        self.log10_T_heat = log10_T_heat
 
         self.WL_tracers = []
         z_max = 0.0
@@ -190,13 +226,17 @@ class CovarianceCalculator:
         hmcode_cosmo.sig8 = sigma8
         hmcode_cosmo.m_nu = self.ccl_cosmo["m_nu"].sum()
 
+        hmcode_cosmo.theat = 10**self.log10_T_heat
+
         hmcode_cosmo.set_linear_power_spectrum(self.pofk_lin_k_h,
                                                self.pofk_lin_z,
                                                self.pofk_lin)
 
-        self.halo_profiles = HMxProfileGenerator(hmcode_cosmo,
-                                                 a_arr=a_arr, k_arr=k_arr/self.ccl_cosmo["h"],
-                                                 verbose=verbose)
+        self.halo_profiles = HMxProfileGenerator(
+                                        hmcode_cosmo,
+                                        a_arr=a_arr,
+                                        k_arr=k_arr/self.ccl_cosmo["h"],
+                                        verbose=verbose)
 
         self._has_halo_profiles = True
 
@@ -348,27 +388,38 @@ class CovarianceCalculator:
         if a_arr is None:
             a_arr = np.linspace(1/(1+6), 1, 50)
 
+        # Turn fsky/mask_wl into dict for the requested cov_blocks
+        if fsky is not None and not isinstance(fsky, dict):
+            fsky = {c: fsky for c in cov_blocks}
+        if mask_wl is not None and not isinstance(mask_wl, dict):
+            mask_wl = {c: mask_wl for c in cov_blocks}
+
         if mode == "SSC":
+            sigma2_B = {}
             if mask_wl is not None:
-                if len(mask_wl) != 2:
-                    mask_wl = (np.arange(len(mask_wl)), mask_wl)
-                a = a_arr.copy()
-                if a_arr[-1] == 1.0:
-                    a[-1] = 1 - 1e-4
-                sigma2_B = (a, [ccl.covariances.sigma2_B_from_mask_cl(
-                                                self.ccl_cosmo,
-                                                a=a_,
-                                                mask_cl=mask_wl)
-                                for a_ in a])
-                if a_arr[-1] == 1.0:
-                    sigma2_B = (np.append(a, 1.0),
-                                np.append(sigma2_B[1][:-1], sigma2_B[1][-1]))
-            else:
-                sigma2_B = (a_arr, ccl.covariances.sigma2_B_disc(
+                for cov_block, m in mask_wl.items():
+                    if len(m) != 2:
+                        m = (np.arange(len(m)), m)
+                    a = a_arr.copy()
+                    if a_arr[-1] == 1.0:
+                        a[-1] = 1 - 1e-4
+                    s = (a, [ccl.covariances.sigma2_B_from_mask_cl(
                                                     self.ccl_cosmo,
-                                                    a=a_arr, fsky=fsky))
+                                                    a=a_,
+                                                    mask_cl=m)
+                             for a_ in a])
+                    if a_arr[-1] == 1.0:
+                        s = (np.append(a, 1.0),
+                             np.append(sigma2_B[1][:-1], sigma2_B[1][-1]))
+                    sigma2_B[cov_block] = s
+            else:
+                for cov_block, f in fsky.items():
+                    sigma2_B[cov_block] = (a_arr,
+                                           ccl.covariances.sigma2_B_disc(
+                                                        self.ccl_cosmo,
+                                                        a=a_arr, fsky=f))
         else:
-            sigma2_B = None
+            sigma2_B = {c: None for c in cov_blocks}
 
         probes_3D = {}
         for cov_block in cov_blocks:
@@ -418,7 +469,8 @@ class CovarianceCalculator:
                                     probe_3D=probes_3D[cov_block],
                                     binning_operator_a=binning_operator["EE"],
                                     binning_operator_b=binning_operator["EE"],
-                                    fsky=fsky, sigma2_B=sigma2_B,
+                                    fsky=fsky[cov_block],
+                                    sigma2_B=sigma2_B[cov_block],
                                     beam_operator_a=None,
                                     beam_operator_b=None,
                                     n_ell_intp=n_ell_intp)
@@ -438,7 +490,8 @@ class CovarianceCalculator:
                                     probe_3D=probes_3D[cov_block],
                                     binning_operator_a=binning_operator["TE"],
                                     binning_operator_b=binning_operator["TE"],
-                                    fsky=fsky, sigma2_B=sigma2_B,
+                                    fsky=fsky[cov_block],
+                                    sigma2_B=sigma2_B[cov_block],
                                     beam_operator_a=beam_operator,
                                     beam_operator_b=beam_operator,
                                     n_ell_intp=n_ell_intp)
@@ -458,7 +511,8 @@ class CovarianceCalculator:
                                     probe_3D=probes_3D[cov_block],
                                     binning_operator_a=binning_operator["EE"],
                                     binning_operator_b=binning_operator["TE"],
-                                    fsky=fsky, sigma2_B=sigma2_B,
+                                    fsky=fsky[cov_block],
+                                    sigma2_B=sigma2_B[cov_block],
                                     beam_operator_a=None,
                                     beam_operator_b=beam_operator,
                                     n_ell_intp=n_ell_intp)
@@ -501,7 +555,20 @@ class CovarianceCalculator:
 
 
 if __name__ == "__main__":
-    prediction_path = "../runs/cov_theory_predictions_run2_beam10/output/data_block/"  # noqa: E501
+
+    base_path = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
+
+    beam = 1.6
+    fsky_EE = 0.0261
+    fsky_TE = 0.00657
+
+    fsky = {"EEEE": fsky_EE,
+            "TETE": fsky_TE,
+            "EETE": np.sqrt(fsky_EE*fsky_TE)}
+
+    mask_wl = {"EE": np.loadtxt("../data/xcorr/cov/W_l/shear_KiDS1000_binary_auto.txt", unpack=True)}  # noqa: E501
+
+    prediction_path = "../runs/cov_theory_predictions_run4_noIA_old3x2ptMAP_beam10/output/data_block/"  # noqa: E501
     params = load_cosmosis_params(prediction_path)
 
     pofk_lin = np.loadtxt(os.path.join(prediction_path, "matter_power_lin/p_k.txt"))
@@ -521,11 +588,9 @@ if __name__ == "__main__":
     b = np.loadtxt("../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952.txt")
     binning_operator = {"EE": b, "TE": b}
 
-    mask_wl = {"EE": np.loadtxt("../data/xcorr/cov/W_l/shear_KiDS1000_binary_auto.txt", unpack=True)}  # noqa: E501
-
     ell = np.arange(b.shape[1])
     beam_operator = misc_utils.create_beam_operator(ell,
-                                                    fwhm=10.0,
+                                                    fwhm=1.6,
                                                     # fwhm_map=10.0,
                                                     # fwhm_target=1.6
                                                     )
@@ -541,7 +606,7 @@ if __name__ == "__main__":
     #                         mode="SSC", cov_blocks=["TETE", "EETE", "EEEE", "joint"],
     #                         binning_operator=binning_operator,
     #                         beam_operator=beam_operator,
-    #                         fsky=0.0216, 
+    #                         fsky=fsky,
     #                         halo_model="hmx",
     #                         n_ell_intp=100)
     
@@ -549,61 +614,66 @@ if __name__ == "__main__":
     #                         mode="cNG", cov_blocks=["TETE", "EETE", "EEEE", "joint"],
     #                         binning_operator=binning_operator,
     #                         beam_operator=beam_operator,
-    #                         fsky=0.0216, 
+    #                         fsky=fsky,
     #                         halo_model="hmx",
     #                         n_ell_intp=100)
 
+    # os.makedirs(os.path.join(base_path, "likelihood/"), exist_ok=True)
+
     # header = misc_utils.file_header(
-    #                     f"Covariance HMx EEEE SSC, disc geometry fsky=0.0216")
-    # np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_SSC_disc_EE.txt",
+    #                     f"Covariance HMx EEEE SSC, disc geometry fsky={fsky['EEEE']}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_SSC_disc_EE.txt"),
     #            cov["KiDS-1000xtSZ SSC disc"]["EEEE"], header=header)
     
     # header = misc_utils.file_header(
-    #                     f"Covariance HMx TETE SSC, disc geometry fsky=0.0216")
-    # np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_SSC_disc_TE.txt",
+    #                     f"Covariance HMx TETE SSC, disc geometry fsky={fsky['TETE']}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_SSC_disc_TE.txt"),
     #            cov["KiDS-1000xtSZ SSC disc"]["TETE"], header=header)
     
     # header = misc_utils.file_header(
-    #                     f"Covariance HMx joint EE+TE SSC, disc geometry fsky=0.0216")
-    # np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_SSC_disc_EE+TE.txt",
+    #                     f"Covariance HMx joint EE+TE SSC, disc geometry fsky={fsky}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_SSC_disc_EE+TE.txt"),
     #            cov["KiDS-1000xtSZ SSC disc"]["joint"], header=header)
 
     # header = misc_utils.file_header(
-    #                     f"Covariance HMx EEEE cNG, 1h fsky=0.0216")
-    # np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_cNG_1h_EE.txt",
+    #                     f"Covariance HMx EEEE cNG, 1h fsky={fsky['EEEE']}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_cNG_1h_EE.txt"),
     #            cov["KiDS-1000xtSZ cNG"]["EEEE"], header=header)
     
     # header = misc_utils.file_header(
-    #                     f"Covariance HMx TETE cNG, 1h fsky=0.0216")
-    # np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_cNG_1h_TE.txt",
+    #                     f"Covariance HMx TETE cNG, 1h fsky={fsky['TETE']}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_cNG_1h_TE.txt"),
     #            cov["KiDS-1000xtSZ cNG"]["TETE"], header=header)
     
     # header = misc_utils.file_header(
-    #                     f"Covariance HMx joint cNG, 1h fsky=0.0216")
-    # np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_cNG_1h_EE+TE.txt",
+    #                     f"Covariance HMx joint cNG, 1h fsky={fsky}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_cNG_1h_EE+TE.txt"),
     #            cov["KiDS-1000xtSZ cNG"]["joint"], header=header)
 
 
-    cov["KiDS-1000xtSZ SSC disc"] = {"TETE": np.loadtxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_SSC_disc_TE.txt"),
-                                     "joint": np.loadtxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_SSC_disc_EE+TE.txt")}
-    cov["KiDS-1000xtSZ cNG"] = {"TETE": np.loadtxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_cNG_1h_TE.txt"),
-                                     "joint": np.loadtxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_cNG_1h_EE+TE.txt")}
-    cov["KiDS-1000xtSZ gaussian"] = {"TETE": np.loadtxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_gaussian_TE.txt"),
-                                     "joint": np.loadtxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_gaussian_EE-TE.txt")}
+    # cov["KiDS-1000xtSZ SSC disc"] = {"TETE": np.loadtxt(os.path.join(base_path, "likelihood/covariance_hmx_SSC_disc_TE.txt")),
+    #                                  "joint": np.loadtxt(os.path.join(base_path, "likelihood/covariance_hmx_SSC_disc_EE+TE.txt"))}
+    # cov["KiDS-1000xtSZ cNG"] = {"TETE": np.loadtxt(os.path.join(base_path, "likelihood/covariance_hmx_cNG_1h_TE.txt")),
+    #                                  "joint": np.loadtxt(os.path.join(base_path, "likelihood/covariance_hmx_cNG_1h_EE+TE.txt"))}
+    # cov["KiDS-1000xtSZ gaussian"] = {"TETE": np.loadtxt(os.path.join(base_path, "likelihood/covariance_gaussian_TE.txt")),
+    #                                  "joint": np.loadtxt(os.path.join(base_path, "likelihood/covariance_gaussian_EE-TE.txt"))}
 
-    header = misc_utils.file_header(
-                        f"Covariance HMx TETE Gaussian, SSC disc, cNG, 1h fsky=0.0216")
-    np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_gaussian_SSC_disc_cNG_1h_TE.txt",
-               (cov["KiDS-1000xtSZ gaussian"]["TETE"]
-                + cov["KiDS-1000xtSZ SSC disc"]["TETE"]
-                + cov["KiDS-1000xtSZ cNG"]["TETE"]), header=header)
+    # header = misc_utils.file_header(
+    #                     f"Covariance HMx TETE Gaussian, SSC disc, cNG, 1h fsky={fsky}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_gaussian_SSC_disc_cNG_1h_TE.txt"),
+    #            (cov["KiDS-1000xtSZ gaussian"]["TETE"]
+    #             + cov["KiDS-1000xtSZ SSC disc"]["TETE"]
+    #             + cov["KiDS-1000xtSZ cNG"]["TETE"]), header=header)
 
-    header = misc_utils.file_header(
-                        f"Covariance HMx joint Gaussian, SSC disc, cNG, 1h fsky=0.0216")
-    np.savetxt("../results/measurements/shear_KiDS1000_y_milca/likelihood/covariance_hmx_gaussian_SSC_disc_cNG_1h_EE+TE.txt",
-               (cov["KiDS-1000xtSZ gaussian"]["joint"]
-                + cov["KiDS-1000xtSZ SSC disc"]["joint"]
-                + cov["KiDS-1000xtSZ cNG"]["joint"]), header=header)
+    # header = misc_utils.file_header(
+    #                     f"Covariance HMx joint Gaussian, SSC disc, cNG, 1h fsky={fsky}")
+    # np.savetxt(os.path.join(base_path, "likelihood/covariance_hmx_gaussian_SSC_disc_cNG_1h_EE+TE.txt"),
+    #            (cov["KiDS-1000xtSZ gaussian"]["joint"]
+    #             + cov["KiDS-1000xtSZ SSC disc"]["joint"]
+    #             + cov["KiDS-1000xtSZ cNG"]["joint"]), header=header)
+
+
+
     # cov["KiDS-1000 SSC disc"] = cov_calculator.compute_NG_covariance(
     #                         mode="SSC", cov_blocks=["EEEE"],
     #                         binning_operator=binning_operator,
@@ -629,13 +699,13 @@ if __name__ == "__main__":
     # np.savetxt("../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/covariance_SSC_mask_EE.txt",
     #            cov["KiDS-1000 SSC mask"]["EEEE"], header=header)
 
-    # cov["KiDS-1000 m"] = cov_calculator.compute_m_covariance(
-    #                             theory_cl_path=os.path.join(prediction_path, "shear_cl_binned"),
-    #                             m=[0.019, 0.020, 0.017, 0.012, 0.010])
-    # header = misc_utils.file_header(
-    #                     f"Covariance EEEE m_correction, sigma_m=[0.019, 0.020, 0.017, 0.012, 0.010]")
-    # np.savetxt("../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/covariance_m_EE.txt",
-    #            cov["KiDS-1000 m"]["EEEE"], header=header)
+    cov["KiDS-1000 m"] = cov_calculator.compute_m_covariance(
+                                theory_cl_path=os.path.join(prediction_path, "shear_cl_binned"),
+                                m=[0.019, 0.020, 0.017, 0.012, 0.010])
+    header = misc_utils.file_header(
+                        f"Covariance EEEE m_correction, sigma_m=[0.019, 0.020, 0.017, 0.012, 0.010]")
+    np.savetxt("../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/covariance_m_no_IA_oldMAP_EE.txt",
+               cov["KiDS-1000 m"]["EEEE"], header=header)
 
     # # Compute total
     # G = np.loadtxt("../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/covariance_gaussian_EE.txt")
