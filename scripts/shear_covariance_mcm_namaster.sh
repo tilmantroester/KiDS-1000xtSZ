@@ -11,7 +11,7 @@
 #SBATCH -e ../logs/slurm/log_nmt_cov.err
 #SBATCH --partition=all
 
-source ${HOME}/Codes/miniconda/bin/activate kcap_env_re
+source ${HOME}/Codes/miniconda/bin/activate analysis
 
 export OMP_NUM_THREADS=32
 python namaster_covariance.py \
@@ -19,6 +19,8 @@ python namaster_covariance.py \
 --pymaster-workspace-output-path /disk09/ttroester/project_triad/namaster_workspaces/shear_KiDS1000_shear_KiDS1000/ \
 --n-iter 3 \
 --nside 2048 \
---exact-noise-noise \
+--exact-noise-signal \
+# --dry-run \
+# --exact-noise-noise \
 # --shear-w-maps ../data/shear_maps_KiDS1000/z0.1-0.3/doublet_weight.fits ../data/shear_maps_KiDS1000/z0.3-0.5/doublet_weight.fits ../data/shear_maps_KiDS1000/z0.5-0.7/doublet_weight.fits ../data/shear_maps_KiDS1000/z0.7-0.9/doublet_weight.fits ../data/shear_maps_KiDS1000/z0.9-1.2/doublet_weight.fits \
 # --shear-w2e2-maps ../data/shear_maps_KiDS1000/z0.1-0.3/w_sq_e_sq.fits ../data/shear_maps_KiDS1000/z0.3-0.5/w_sq_e_sq.fits ../data/shear_maps_KiDS1000/z0.5-0.7/w_sq_e_sq.fits ../data/shear_maps_KiDS1000/z0.7-0.9/w_sq_e_sq.fits ../data/shear_maps_KiDS1000/z0.9-1.2/w_sq_e_sq.fits \

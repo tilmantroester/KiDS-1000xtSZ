@@ -12,15 +12,26 @@ if __name__ == "__main__":
     n_z = 5
 
     covariance_path = ("../results/measurements/"
-                       "shear_KiDS1000_shear_KiDS1000/cov/")
+                       "shear_KiDS1000_shear_KiDS1000/cov_exact_noise_mixed_terms/")
+    # covariance_file_template = f"cov_shear_shear_{idx_a1}-{idx_a2}_"
+    #                            f"{idx_b1}-{idx_b2}.npz"
+    covariance_file_template = ("cov_shear_{}_shear_{}_"
+                                "shear_{}_shear_{}.npz")
+    # covariance_file_template = ("cov_shear_noise_{}_shear_noise_{}_"
+    #                             "shear_noise_{}_shear_noise_{}.npz")
+
     data_Cl_path = ("../results/measurements/"
                     "shear_KiDS1000_shear_KiDS1000/data/")
 
     Cl_file = ("../results/measurements/"
                "shear_KiDS1000_shear_KiDS1000/likelihood/Cl_EE_gal.txt")
-    covariance_file = ("../results/measurements/"
-                       "shear_KiDS1000_shear_KiDS1000/likelihood/"
-                       "covariance_gaussian_CCL_EE.txt")
+
+    key = "mmmm"
+    tag = "exact_noise_mixed_terms"
+
+    covariance_file = (f"../results/measurements/"
+                       f"shear_KiDS1000_shear_KiDS1000/likelihood/"
+                       f"covariance_gaussian_{tag}_EE.txt")
 
     field_idx = [(i, j) for i in range(n_z)
                  for j in range(i+1)]
@@ -33,11 +44,11 @@ if __name__ == "__main__":
         ell = d["ell_eff"]
         Cl_EE.append(d["Cl_decoupled"][0])
 
-    data = np.vstack([ell] + Cl_EE).T
-    header = (f"ell, Cl_EE (tomographic bins "
-              f"{', '.join([str(b) for b in field_idx])})")
-    header = file_header(header)
-    np.savetxt(Cl_file, data, header=header)
+    # data = np.vstack([ell] + Cl_EE).T
+    # header = (f"ell, Cl_EE (tomographic bins "
+    #           f"{', '.join([str(b) for b in field_idx])})")
+    # header = file_header(header)
+    # np.savetxt(Cl_file, data, header=header)
 
     n_ell_bin = len(ell)
     cov_gaussian_EE = np.zeros((n_ell_bin*len(field_idx),
@@ -45,12 +56,14 @@ if __name__ == "__main__":
 
     for i, (idx_a1, idx_a2) in enumerate(field_idx):
         for j, (idx_b1, idx_b2) in enumerate(field_idx[:i+1]):
-            c = np.load(os.path.join(
-                        covariance_path,
-                        f"cov_shear_shear_{idx_a1}-{idx_a2}_"
-                        f"{idx_b1}-{idx_b2}.npz"))["ssss"].reshape(
-                                                    n_ell_bin, 4,
-                                                    n_ell_bin, 4)[:, 0, :, 0]
+            cov_file = covariance_file_template.format(
+                            idx_a1, idx_a2, idx_b1, idx_b2)
+            cov_file = os.path.join(covariance_path, cov_file)
+            if not os.path.isfile(cov_file):
+                print(f"No file {cov_file}. Skipping.")
+                continue
+            c = np.load(cov_file)[key].reshape(n_ell_bin, 4,
+                                               n_ell_bin, 4)[:, 0, :, 0]
 
             cov_gaussian_EE[i*n_ell_bin:(i+1)*n_ell_bin,
                             j*n_ell_bin:(j+1)*n_ell_bin] = c

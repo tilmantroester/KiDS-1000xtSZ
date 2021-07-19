@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
     base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
 
-    probes = ["TE"]
+    probes = []
     cov_blocks = ["TETE", "TBTB"]
 
     Cl_suffix = "gal"
