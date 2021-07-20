@@ -11,10 +11,15 @@ from misc_utils import file_header  # noqa: E402
 if __name__ == "__main__":
     n_z = 5
 
+    # key = "mmmm"
+    # tag = "exact_noise_mixed_terms"
+    # key = "nnnn"
+    # tag = "exact_noise"
+    key = "aaaa"
+    tag = "nka"
+
     covariance_path = ("../results/measurements/"
-                       "shear_KiDS1000_shear_KiDS1000/cov_exact_noise_mixed_terms/")
-    # covariance_file_template = f"cov_shear_shear_{idx_a1}-{idx_a2}_"
-    #                            f"{idx_b1}-{idx_b2}.npz"
+                       f"shear_KiDS1000_shear_KiDS1000/cov_3x2pt_MAP/nka/")
     covariance_file_template = ("cov_shear_{}_shear_{}_"
                                 "shear_{}_shear_{}.npz")
     # covariance_file_template = ("cov_shear_noise_{}_shear_noise_{}_"
@@ -26,12 +31,9 @@ if __name__ == "__main__":
     Cl_file = ("../results/measurements/"
                "shear_KiDS1000_shear_KiDS1000/likelihood/Cl_EE_gal.txt")
 
-    key = "mmmm"
-    tag = "exact_noise_mixed_terms"
-
     covariance_file = (f"../results/measurements/"
-                       f"shear_KiDS1000_shear_KiDS1000/likelihood/"
-                       f"covariance_gaussian_{tag}_EE.txt")
+                       f"shear_KiDS1000_shear_KiDS1000/likelihood/cov/"
+                       f"covariance_gaussian_{tag}_EEEE.txt")
 
     field_idx = [(i, j) for i in range(n_z)
                  for j in range(i+1)]
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     cov_gaussian_EE[np.triu_indices_from(cov_gaussian_EE, k=1)] = \
         cov_gaussian_EE.T[np.triu_indices_from(cov_gaussian_EE, k=1)]
 
-    header = (f"Covariance of Cl_EE (tomographic bins "
+    header = (f"Covariance {tag} of Cl_EE (tomographic bins "
               f"{', '.join([str(b) for b in field_idx])})")
     header = file_header(header)
     np.savetxt(covariance_file, cov_gaussian_EE, header=header)

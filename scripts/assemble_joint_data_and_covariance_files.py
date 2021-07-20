@@ -12,17 +12,17 @@ if __name__ == "__main__":
     n_z = 5
 
     base_path_EE = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
-    # base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
-    base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
+    base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
 
     probes = []
-    cov_blocks = ["TETE", "TBTB"]
+    cov_blocks = ["TETE", "EEEE", "joint"]
 
     Cl_suffix = "gal"
 
-    covariance_paths = {"EEEE": os.path.join(base_path_EE, "cov/"),
-                        "TETE": os.path.join(base_path_TE, "cov/"),
-                        "EETE": os.path.join(base_path_TE, "cov/")}
+    covariance_paths = {"EEEE": os.path.join(base_path_EE, "cov_3x2pt_MAP/nka/"),
+                        "TETE": os.path.join(base_path_TE, "cov_3x2pt_MAP/nka/"),
+                        "EETE": os.path.join(base_path_TE, "cov_3x2pt_MAP/nka/")}
     data_Cl_path = {"EE": os.path.join(base_path_EE, "data/"),
                     "TE": os.path.join(base_path_TE, "data/")}
 
@@ -31,11 +31,11 @@ if __name__ == "__main__":
                "TE": os.path.join(base_path_TE, f"likelihood/Cl_TE_{Cl_suffix}.txt"),
                "TB": os.path.join(base_path_TE, f"likelihood/Cl_TB_{Cl_suffix}.txt")}
 
-    covariance_files = {"EEEE": os.path.join(base_path_EE, "likelihood/covariance_gaussian_EE.txt"),
-                        "BBBB": os.path.join(base_path_EE, "likelihood/covariance_gaussian_BB.txt"),
-                        "TETE": os.path.join(base_path_TE, f"likelihood/covariance_{Cl_suffix}_gaussian_TE.txt"),
-                        "TBTB": os.path.join(base_path_TE, f"likelihood/covariance_{Cl_suffix}_gaussian_TB.txt"),
-                        "joint": os.path.join(base_path_TE, f"likelihood/covariance_{Cl_suffix}_gaussian_EE-TE.txt")}
+    covariance_files = {"EEEE": os.path.join(base_path_TE, "likelihood/cov/covariance_gaussian_nka_EEEE.txt"),
+                        "BBBB": os.path.join(base_path_TE, "likelihood/cov/covariance_gaussian_nka_BBBB.txt"),
+                        "TETE": os.path.join(base_path_TE, f"likelihood/cov/covariance_gaussian_nka_TETE.txt"),
+                        "TBTB": os.path.join(base_path_TE, f"likelihood/cov/covariance_gaussian_nka_TBTB.txt"),
+                        "joint": os.path.join(base_path_TE, f"likelihood/cov/covariance_gaussian_nka_joint.txt")}
 
     NG_covariance_files = None
     NG_covariance_files = {"EEEE":  {"m": os.path.join(base_path_EE, "likelihood/covariance_m_EE.txt"),
@@ -109,16 +109,16 @@ if __name__ == "__main__":
         Cl["TE"].append(d["Cl_decoupled"][0])
         Cl["TB"].append(d["Cl_decoupled"][1])
 
-    if "EE" in probes:
-        for probe in ["EE", "BB"]:
-            data = np.vstack([ell[probe]] + Cl[probe]).T
-            header = file_header(Cl_headers[probe])
-            np.savetxt(Cl_file[probe], data, header=header)
-    if "TE" in probes:
-        for probe in ["TE", "TB"]:
-            data = np.vstack([ell[probe]] + Cl[probe]).T
-            header = file_header(Cl_headers[probe])
-            np.savetxt(Cl_file[probe], data, header=header)
+    # if "EE" in probes:
+    #     for probe in ["EE", "BB"]:
+    #         data = np.vstack([ell[probe]] + Cl[probe]).T
+    #         header = file_header(Cl_headers[probe])
+    #         np.savetxt(Cl_file[probe], data, header=header)
+    # if "TE" in probes:
+    #     for probe in ["TE", "TB"]:
+    #         data = np.vstack([ell[probe]] + Cl[probe]).T
+    #         header = file_header(Cl_headers[probe])
+    #         np.savetxt(Cl_file[probe], data, header=header)
 
     n_ell_bin_EE = len(ell["EE"])
     n_ell_bin_TE = len(ell["TE"])
@@ -137,8 +137,8 @@ if __name__ == "__main__":
             for j, (idx_b1, idx_b2) in enumerate(field_idx_EE[:i+1]):
                 c = np.load(os.path.join(
                             covariance_paths["EEEE"],
-                            f"cov_shear_shear_{idx_a1}-{idx_a2}_"
-                            f"{idx_b1}-{idx_b2}.npz"))["ssss"].reshape(
+                            f"cov_shear_{idx_a1}_shear_{idx_a2}_"
+                            f"shear_{idx_b1}_shear_{idx_b2}.npz"))["aaaa"].reshape(
                                                         n_ell_bin_EE, 4,
                                                         n_ell_bin_EE, 4)
 
@@ -162,7 +162,7 @@ if __name__ == "__main__":
                 cov_gaussian["TBTB"][i*n_ell_bin_TE:(i+1)*n_ell_bin_TE,
                                     j*n_ell_bin_TE:(j+1)*n_ell_bin_TE] = c[:, 1, :, 1]
 
-    if "EETE" in cov_blocks:
+    if "EETE" in cov_blocks or "joint" in cov_blocks:
         # EETE/BBTB (in the upper triangle)
         for i, (idx_a1, idx_a2) in enumerate(field_idx_EE):
             for j, (idx_b1, idx_b2) in enumerate(field_idx_TE):
