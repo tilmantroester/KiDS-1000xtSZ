@@ -37,6 +37,8 @@ def setup(options):
         print("Training GP")
         CIB_model.train(progress_bar=False)
 
+    CIB_model.print_model_parameters()
+
     CIB_section = options.get_string(option_section, "CIB_section",
                                      default="shear_CIB_cl")
     tSZ_CIB_contamination_section = options.get_string(

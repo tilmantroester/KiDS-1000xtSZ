@@ -125,20 +125,19 @@ if __name__ == "__main__":
                                       f"{f_a1}_{idx_a1}_{f_a2}_{idx_a2}_"
                                       f"{f_b1}_{idx_b1}_{f_b2}_{idx_b2}.fits")
     printflush("Reading covariance workspace from ", workspace_file)
-    cov_wsp = {}
-    cov_wsp["ssss"] = nmt.NmtCovarianceWorkspace()
-    cov_wsp["ssss"].read_from(workspace_file)
+    cov_wsp = nmt.NmtCovarianceWorkspace()
+    cov_wsp.read_from(workspace_file)
 
     printflush("Computing covariance matrices")
     cov_matrix = {}
-    cov_matrix["ssss"] = compute_gaussian_covariance(
+    cov_matrix["aaaa"] = compute_gaussian_covariance(
                                 idx_a1, idx_a2, idx_b1, idx_b2,
                                 f_a1, f_a2, f_b1, f_b2,
                                 spins=spins,
                                 Cl_signal=Cl_signal,
                                 Cl_noise=Cl_noise,
                                 ell=ell,
-                                cov_wsp=cov_wsp["ssss"],
+                                cov_wsp=cov_wsp,
                                 wsp_a=wsp_a, wsp_b=wsp_b)
 
     cov_filename = (f"cov_{f_a1}_{idx_a1}_{f_a2}_{idx_a2}_"
