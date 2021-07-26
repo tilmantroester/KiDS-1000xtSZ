@@ -18,8 +18,13 @@ if __name__ == "__main__":
     cov_EEEE.update({tag: np.loadtxt(f"../results/measurements/shear_KiDS1000_y_milca/likelihood/cov/covariance_{tag}_EEEE.txt")
                      for tag in ("hmx_cNG_1h", "hmx_SSC_disc", "hmx_SSC_mask_wl", "m")})
 
-    cov_TETE = {tag: np.loadtxt(f"../results/measurements/shear_KiDS1000_y_milca/likelihood/cov/covariance_{tag}_TETE.txt")
-                for tag in ("gaussian_nka", "hmx_cNG_1h", "hmx_SSC_disc", "hmx_SSC_mask_wl", "hmx_SSC_mask_wl_overlap", "m")}
+    TE_tag = "y_milca"
+
+    cov_TETE = {tag: np.loadtxt(f"../results/measurements/shear_KiDS1000_{TE_tag}/likelihood/cov/covariance_{tag}_TETE.txt")
+                for tag in ("gaussian_nka",)}
+
+    cov_TETE.update({tag: np.loadtxt(f"../results/measurements/shear_KiDS1000_y_milca/likelihood/cov/covariance_{tag}_TETE.txt")
+                for tag in ("hmx_cNG_1h", "hmx_SSC_disc", "hmx_SSC_mask_wl", "hmx_SSC_mask_wl_overlap", "m")})
 
     cov_joint = {tag: np.loadtxt(f"../results/measurements/shear_KiDS1000_y_milca/likelihood/cov/covariance_{tag}_joint.txt")
                  for tag in ("gaussian_nka", "hmx_cNG_1h", "hmx_SSC_disc", "hmx_SSC_mask_wl", "hmx_SSC_mask_wl_overlap", "m")}
@@ -76,19 +81,19 @@ if __name__ == "__main__":
 
     cov_joint["total_SSC_mask"] = c
 
-    for name, tags in contributions_EEEE.items():
-        header = (f"Covariance {name} ({'+'.join(tags)}) of Cl_EE (tomographic bins "
-                  f"{', '.join([str(b) for b in field_idx_EE])})")
-        header = file_header(header)
-        np.savetxt(f"../results/measurements/shear_KiDS1000_shear_KiDS1000/"
-                   f"likelihood/cov/covariance_{name}_EEEE.txt",
-                   cov_EEEE[name], header=header)
+    # for name, tags in contributions_EEEE.items():
+    #     header = (f"Covariance {name} ({'+'.join(tags)}) of Cl_EE (tomographic bins "
+    #               f"{', '.join([str(b) for b in field_idx_EE])})")
+    #     header = file_header(header)
+    #     np.savetxt(f"../results/measurements/shear_KiDS1000_shear_KiDS1000/"
+    #                f"likelihood/cov/covariance_{name}_EEEE.txt",
+    #                cov_EEEE[name], header=header)
 
     for name, tags in contributions_TETE.items():
         header = (f"Covariance {name} ({'+'.join(tags)}) of Cl_TE (tomographic bins "
                   f"{', '.join([str(b) for b in field_idx_TE])})")
         header = file_header(header)
-        np.savetxt(f"../results/measurements/shear_KiDS1000_y_milca/"
+        np.savetxt(f"../results/measurements/shear_KiDS1000_{TE_tag}/"
                    f"likelihood/cov/covariance_{name}_TETE.txt",
                    cov_TETE[name], header=header)
 

@@ -115,7 +115,7 @@ def load_signal_Cls(nside, filenames, probes, ell_file=None):
         Cl = data[:, 1]
 
     if len(ell) < n_ell:
-        intp = scipy.interpolate.InterpolatedUnivariateSpline(ell, Cl, 
+        intp = scipy.interpolate.InterpolatedUnivariateSpline(ell, Cl,
                                                               ext=2)
         ell = np.arange(n_ell)
         Cl = np.zeros(n_ell)

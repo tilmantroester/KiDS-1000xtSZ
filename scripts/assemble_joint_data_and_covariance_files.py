@@ -12,19 +12,35 @@ if __name__ == "__main__":
     n_z = 5
 
     base_path_EE = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
-    base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_y_nilc/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_y_ziang_nocib/"
+    base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"
+
+
     # base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
 
-    Cl_suffix = "gal"
+    Cl_suffix = "cel"
 
-    field_description = {"E": "KiDS-1000, galactic coordinates",
-                         "T": "Planck Compton-y MILCA"
+    field_description = {#"E": "KiDS-1000, galactic coordinates",
+                        #  "T": "Planck Compton-y MILCA"
+                        #  "T": "Planck Compton-y NILC",
+                        #  "T": "Planck Compton-y Ziang, CIB subtracted"
+
+                         "E": "KiDS-1000, celestial coordinates",
+                         "T": "ACT BN Compton-y, CIB deprojected"
                          }
-    field_tag = {"E": "shear_KiDS1000_gal",
-                 "T": "y_milca"}
+    field_tag = {#"E": "shear_KiDS1000_gal",
+                #  "T": "y_milca",
+                #  "T": "y_nilc",
+                #  "T": "y_ziang_nocib"
 
-    probes = ["TE", "TB", "EE", "BB"]
-    cov_blocks = ["TETE", "EEEE", "joint"]
+                "E": "shear_KiDS1000_cel",
+                 "T": "ACT_BN_nocib"
+                 }
+
+    probes = ["TE", "TB"]
+    cov_blocks = ["TETE",]
 
     tag_EE = field_tag["E"]
     tag_TE = field_tag["E"] + "_" + field_tag["T"]
@@ -48,6 +64,9 @@ if __name__ == "__main__":
 
     for probe in probes:
         os.makedirs(os.path.split(Cl_file[probe])[0], exist_ok=True)
+    for cov_block in cov_blocks:
+        os.makedirs(os.path.split(covariance_files[cov_block])[0],
+                    exist_ok=True)
 
     field_idx_EE = [(i, j) for i in range(n_z)
                     for j in range(i+1)]

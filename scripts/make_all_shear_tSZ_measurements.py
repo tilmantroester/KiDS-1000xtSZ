@@ -3,23 +3,29 @@ import os
 
 
 if __name__ == "__main__":
-    galactic_coordinates = True
+    galactic_coordinates = False
 
-    bin_operator_file = "../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952_namaster.txt"      # noqa: E501
+    bin_operator_file = "../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952_namaster.txt"                              # noqa: E501
 
-    workspace_file_template = ("/disk09/ttroester/project_triad/namaster_workspaces/"                    # noqa: E501
-                               "shear_KiDS1000_y_milca/pymaster_workspace_shear_{}_foreground_{}.fits")  # noqa: E501
+    if galactic_coordinates:
+        workspace_file_template = ("/disk09/ttroester/project_triad/namaster_workspaces/"                               # noqa: E501
+                                "shear_KiDS1000_y_milca/pymaster_workspace_shear_{}_foreground_{}.fits")                # noqa: E501
+        bandpower_window_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"                             # noqa: E501
+                                        "data/pymaster_bandpower_windows_{}-{}.npy")                                    # noqa: E501
+    else:
+        workspace_file_template = ("/disk09/ttroester/project_triad/namaster_workspaces/"                               # noqa: E501
+                                   "shear_KiDS1000_cel_y_ACT_BN/pymaster_workspace_shear_{}_foreground_{}.fits")        # noqa: E501
+        bandpower_window_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"                        # noqa: E501
+                                          "data/pymaster_bandpower_windows_{}-{}.npy")                                  # noqa: E501
 
-    bandpower_window_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"  # noqa: E501
-                                      "data/pymaster_bandpower_windows_{}-{}.npy")              # noqa: E501
-
+    Cl_data_file_template = None
     Cl_cov_file_template = None
 
     # Planck milca
-    Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"           # noqa: E501
-                             "data/Cl_gal_{}-{}.npz")
-    Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"            # noqa: E501
-                            "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
+    # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"           # noqa: E501
+    #                          "data/Cl_gal_{}-{}.npz")
+    # Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_milca/"            # noqa: E501
+    #                         "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
     # Planck nilc
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_nilc/"           # noqa: E501
     #                          "data/Cl_gal_{}-{}.npz")
@@ -29,12 +35,12 @@ if __name__ == "__main__":
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_y_ziang_nocib/"           # noqa: E501
     #                          "data/Cl_gal_{}-{}.npz")
     # Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_ziang_nocib/"            # noqa: E501
-    #                         "cov_Cls/Cl_cov_CCL_gal_{}-{}.npz")
+    #                         "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
     # ACT BN
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"           # noqa: E501
     #                          "data/Cl_cel_{}-{}.npz")
-    # Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"            # noqa: E501
-    #                         "cov_Cls/Cl_cov_{}-{}.npz")
+    Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"            # noqa: E501
+                            "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
     # ACT BN nocib
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"           # noqa: E501
     #                          "data/Cl_cel_{}-{}.npz")
@@ -48,13 +54,13 @@ if __name__ == "__main__":
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_545GHz_CIB/"           # noqa: E501
     #                          "data/Cl_gal_{}-{}.npz")
 
-    catalog_files = ["../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.1-0.3_galactic.npz",     # noqa: E501
-                     "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.3-0.5_galactic.npz",     # noqa: E501
-                     "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.5-0.7_galactic.npz",     # noqa: E501
-                     "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.7-0.9_galactic.npz",     # noqa: E501
-                     "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.9-1.2_galactic.npz"]     # noqa: E501
-
-    if not galactic_coordinates:
+    if galactic_coordinates:
+        catalog_files = ["../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.1-0.3_galactic.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.3-0.5_galactic.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.5-0.7_galactic.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.7-0.9_galactic.npz",     # noqa: E501
+                         "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.9-1.2_galactic.npz"]     # noqa: E501
+    else:
         catalog_files = ["../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.1-0.3.npz",     # noqa: E501
                          "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.3-0.5.npz",     # noqa: E501
                          "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.5-0.7.npz",     # noqa: E501
@@ -62,20 +68,20 @@ if __name__ == "__main__":
                          "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.9-1.2.npz"]     # noqa: E501
 
     foreground_beam = None
-    
+
     # Planck milca
-    foreground_map = "../data/y_maps/polspice/milca/triplet.fits"
-    foreground_mask = "../data/y_maps/polspice/milca/singlet_mask.fits"
+    # foreground_map = "../data/y_maps/polspice/milca/triplet.fits"
+    # foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
     # foreground_beam = "../data/xcorr/beams/beam_Planck.txt"
     # Planck nilc
     # foreground_map = "../data/y_maps/Planck_processed/nilc_full.fits"
     # foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
     # Ziang's CIB deprojected map
-    # foreground_map = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_v1.02_bp.fits"  # noqa: E501
-    # foreground_mask = "../data/y_maps/polspice/milca/singlet_mask.fits"
+    # foreground_map = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_nomockcib_v1.02_bp.fits"  # noqa: E501
+    # foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
     # ACT BN
-    # foreground_map = "../data/y_maps/ACT/BN.fits"
-    # foreground_mask = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
+    foreground_map = "../data/y_maps/ACT/BN.fits"
+    foreground_mask = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
     # ACT BN nocib
     # foreground_map = "../data/y_maps/ACT/BN_deproject_cib.fits"
     # foreground_mask = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
@@ -88,13 +94,16 @@ if __name__ == "__main__":
     # foreground_map = "../data/CIB_maps/CIB-GNILC-F545_beam10.fits"
     # foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
 
-    raw_ell_file = "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/shear_y_cl/ell.txt"  # noqa: E501
+    # theory_run_name = "cov_theory_predictions_run1_hmx_nz128_beam10"
+    theory_run_name = "cov_theory_predictions_run3_hmx_nocib_beam1.6"
 
-    raw_Cl_files = ["../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/shear_y_cl/bin_1_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/shear_y_cl/bin_2_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/shear_y_cl/bin_3_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/shear_y_cl/bin_4_1.txt",  # noqa: E501
-                    "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/shear_y_cl/bin_5_1.txt",  # noqa: E501
+    raw_ell_file = f"../runs/{theory_run_name}/output/data_block/shear_y_cl/ell.txt"  # noqa: E501
+
+    raw_Cl_files = [f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_1_1.txt",  # noqa: E501
+                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_2_1.txt",  # noqa: E501
+                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_3_1.txt",  # noqa: E501
+                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_4_1.txt",  # noqa: E501
+                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_5_1.txt",  # noqa: E501
                     ]
 
     os.environ["OMP_NUM_THREADS"] = "20"
@@ -130,8 +139,9 @@ if __name__ == "__main__":
             Cl_cov_file = Cl_cov_file_template.format(*idx)
             cmd += ["--Cl-cov-filename", Cl_cov_file]
 
-        # Cl_data_file = Cl_data_file_template.format(*idx)
-        # cmd += ["--Cl-data-filename", Cl_data_file]
+        if Cl_data_file_template is not None:
+            Cl_data_file = Cl_data_file_template.format(*idx)
+            cmd += ["--Cl-data-filename", Cl_data_file]
 
         bandpower_window_file = bandpower_window_file_template.format(*idx)
         if not os.path.isfile(bandpower_window_file):
