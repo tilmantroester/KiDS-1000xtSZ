@@ -623,8 +623,23 @@ if __name__ == "__main__":
     base_path = "../results/measurements/shear_KiDS1000_y_milca/"
 
     beam = 10.0
-    fsky_EE = 0.0261
-    fsky_TE = 0.00657
+
+    # b = np.loadtxt("../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952.txt")
+    # binning_operator = {"EE": b, "TE": b}
+
+    binning_operator = {"EE": np.load("../results/measurements/shear_KiDS1000_shear_KiDS1000/data/pymaster_bandpower_windows_4-4.npy")[0, :, 0],  # noqa: E501
+                        "TE": np.load("../results/measurements/shear_KiDS1000_y_milca/data/pymaster_bandpower_windows_4-0.npy")[0, :, 0]}         # noqa: E501
+
+    # From data/xcorr/cov/W_l/
+    # in sr
+    footprint_areas = {"KiDS1000":  0.2714,
+                       "Planck_gal40_ps": 6.2120,
+                       "KiDS1000_Planck_gal40_ps_overlap": 0.2323,
+                       "ACT_BN_Planck_gal40_ps": 0.4403,
+                       "KiDS1000_cel_ACT_BN_Planck_gal40_ps_overlap": 0.0825}
+
+    fsky_EE = footprint_areas["KiDS1000"]/(4*np.pi)
+    fsky_TE = footprint_areas["KiDS1000_Planck_gal40_ps_overlap"]/(4*np.pi)
 
     fsky = {"EEEE": fsky_EE,
             "TETE": fsky_TE,
@@ -659,14 +674,11 @@ if __name__ == "__main__":
                               h=cosmo_params["h0"],
                               m_nu=cosmo_params["mnu"])
 
-    b = np.loadtxt("../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952.txt")
-    binning_operator = {"EE": b, "TE": b}
+    ell_max = binning_operator["EE"].shape[1]
 
-    ell = np.arange(b.shape[1])
+    ell = np.arange(ell_max)
     beam_operator = misc_utils.create_beam_operator(ell,
                                                     fwhm=beam,
-                                                    # fwhm_map=10.0,
-                                                    # fwhm_target=1.6
                                                     )
 
     z = np.loadtxt(os.path.join(prediction_path, "nz_kids1000/z.txt"))
@@ -678,83 +690,84 @@ if __name__ == "__main__":
                             pofk_lin=pofk_lin,
                             log10_T_heat=halo_model_params["log10_theat"])
 
-    cov = {}
+    try:
+        with open(os.path.join(base_path, "cov_NG/cov_NG.pickle"), "rb") as f:
+            cov = pickle.load(f)
+    except FileNotFoundError:
+        cov = {}
 
+    cov["KiDS-1000xtSZ SSC disc"] = cov_calculator.compute_NG_covariance(
+                            mode="SSC",
+                            cov_blocks=["TETE", "EETE", "EEEE", "joint"],
+                            binning_operator=binning_operator,
+                            beam_operator=beam_operator,
+                            fsky=fsky,
+                            halo_model="hmx",
+                            n_ell_intp=100)
     with open(
-            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "rb") as f:
-        cov = pickle.load(f)
+            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
+        pickle.dump(cov, f)
 
-    # cov["KiDS-1000xtSZ SSC disc"] = cov_calculator.compute_NG_covariance(
-    #                         mode="SSC",
-    #                         cov_blocks=["TETE", "EETE", "EEEE", "joint"],
-    #                         binning_operator=binning_operator,
-    #                         beam_operator=beam_operator,
-    #                         fsky=fsky,
-    #                         halo_model="hmx",
-    #                         n_ell_intp=100)
-    # with open(
-    #         os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
-    #     pickle.dump(cov, f)
+    cov["KiDS-1000xtSZ SSC mask"] = cov_calculator.compute_NG_covariance(
+                            mode="SSC",
+                            cov_blocks=["TETE", "EETE", "EEEE", "joint"],
+                            binning_operator=binning_operator,
+                            beam_operator=beam_operator,
+                            mask_wl=mask_wl,
+                            halo_model="hmx",
+                            n_ell_intp=100)
+    with open(
+            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
+        pickle.dump(cov, f)
 
-    # cov["KiDS-1000xtSZ SSC mask"] = cov_calculator.compute_NG_covariance(
-    #                         mode="SSC",
-    #                         cov_blocks=["TETE", "EETE", "EEEE", "joint"],
-    #                         binning_operator=binning_operator,
-    #                         beam_operator=beam_operator,
-    #                         mask_wl=mask_wl,
-    #                         halo_model="hmx",
-    #                         n_ell_intp=100)
-    # with open(
-    #         os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
-    #     pickle.dump(cov, f)
+    cov["KiDS-1000xtSZ SSC mask overlap"] = \
+        cov_calculator.compute_NG_covariance(
+                            mode="SSC",
+                            cov_blocks=["TETE", "EETE", "EEEE", "joint"],
+                            binning_operator=binning_operator,
+                            beam_operator=beam_operator,
+                            mask_wl=mask_wl_overlap,
+                            halo_model="hmx",
+                            n_ell_intp=100)
+    with open(
+            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
+        pickle.dump(cov, f)
 
-    # cov["KiDS-1000xtSZ SSC mask overlap"] = \
-    #     cov_calculator.compute_NG_covariance(
-    #                         mode="SSC",
-    #                         cov_blocks=["TETE", "EETE", "EEEE", "joint"],
-    #                         binning_operator=binning_operator,
-    #                         beam_operator=beam_operator,
-    #                         mask_wl=mask_wl_overlap,
-    #                         halo_model="hmx",
-    #                         n_ell_intp=100)
-    # with open(
-    #         os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
-    #     pickle.dump(cov, f)
+    cov["KiDS-1000xtSZ cNG"] = cov_calculator.compute_NG_covariance(
+                            mode="cNG",
+                            cov_blocks=["TETE", "EETE", "EEEE", "joint"],
+                            binning_operator=binning_operator,
+                            beam_operator=beam_operator,
+                            fsky=fsky,
+                            halo_model="hmx",
+                            n_ell_intp=100)
+    with open(
+            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
+        pickle.dump(cov, f)
 
-    # cov["KiDS-1000xtSZ cNG"] = cov_calculator.compute_NG_covariance(
-    #                         mode="cNG",
-    #                         cov_blocks=["TETE", "EETE", "EEEE", "joint"],
-    #                         binning_operator=binning_operator,
-    #                         beam_operator=beam_operator,
-    #                         fsky=fsky,
-    #                         halo_model="hmx",
-    #                         n_ell_intp=100)
-    # with open(
-    #         os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
-    #     pickle.dump(cov, f)
-
-    # theory_cl_paths = {"EE": os.path.join(prediction_path,
-    #                                       "shear_cl_binned"),
-    #                    "TE": os.path.join(prediction_path,
-    #                                       "shear_y_cl_beam_pixwin_binned")}
-    # cov["KiDS-1000xtSZ m"] = cov_calculator.compute_m_covariance(
-    #                             theory_cl_paths=theory_cl_paths,
-    #                             m=[0.019, 0.020, 0.017, 0.012, 0.010],
-    #                             cov_blocks=["EEEE", "TETE", "EETE"])
-    # with open(
-    #         os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
-    #     pickle.dump(cov, f)
+    theory_cl_paths = {"EE": os.path.join(prediction_path,
+                                          "shear_cl_binned"),
+                       "TE": os.path.join(prediction_path,
+                                          "shear_y_cl_beam_pixwin_binned")}
+    cov["KiDS-1000xtSZ m"] = cov_calculator.compute_m_covariance(
+                                theory_cl_paths=theory_cl_paths,
+                                m=[0.019, 0.020, 0.017, 0.012, 0.010],
+                                cov_blocks=["EEEE", "TETE", "EETE"])
+    with open(
+            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
+        pickle.dump(cov, f)
 
     os.makedirs(os.path.join(base_path, "likelihood/cov"), exist_ok=True)
 
     for cov_block in ["EEEE", "TETE", "joint"]:
-        fsky_str = f"{fsky[cov_block]}"
-        mask_wl_str = f"{mask_wl_files[cov_block]}"
-        mask_wl_overlap_str = f"{mask_wl_overlap_files[cov_block]}"
         if cov_block == "joint":
             fsky_str = f"{fsky}"
             mask_wl_str = f"{mask_wl_files}"
             mask_wl_overlap_str = f"{mask_wl_overlap_files}"
+        else:
+            fsky_str = f"{fsky[cov_block]}"
+            mask_wl_str = f"{mask_wl_files[cov_block]}"
+            mask_wl_overlap_str = f"{mask_wl_overlap_files[cov_block]}"
 
         header = misc_utils.file_header(
                     f"Covariance {cov_block} m_correction, sigma_m=[0.019, 0.020, 0.017, 0.012, 0.010]")                # noqa: E501
