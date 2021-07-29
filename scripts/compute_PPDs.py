@@ -5,7 +5,8 @@ import types
 
 import numpy as np
 
-KCAP_PATH = "/home/ttroester/Research/KiDS/kcap/"
+# KCAP_PATH = "/home/ttroester/Research/KiDS/kcap/"
+KCAP_PATH = "/Users/yooken/Research/KiDS/kcap/"
 
 import sys
 sys.path.append(os.path.join(KCAP_PATH, "kcap"))
@@ -256,10 +257,17 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--chain-dir")
-    parser.add_argument("--output-file")
+    parser.add_argument("--output-dir")
     parser.add_argument("--n-ppd", default=3)
 
     args = parser.parse_args()
+
+    n_z = 5
+    n_ell_bin = 12
+
+    field_idx_EE = [(i, j) for i in range(n_z)
+                    for j in range(i+1)]
+    field_idx_TE = [(i, 0) for i in range(n_z)]
 
     n_ppd = int(args.n_ppd)
 
@@ -274,13 +282,15 @@ if __name__ == "__main__":
     ppd_idx = np.random.choice(n_sample, size=n_ppd)
 
     param_names = [n.name for n in equal_weight_chain.getParamNames().names]
-    d = equal_weight_chain.getParamSampleDict(ppd_idx)
+    ppd_params = equal_weight_chain.getParamSampleDict(ppd_idx)
+
+    np.savez(os.path.join(args.output_dir, "ppd_params.npz"), **ppd_params)
     
     ppd_blocks = []
-    ppd_Cls = []
+    tpd_Cls = {"EE": [], "TE": []}
+    ppd_Cls = {"EE": [], "TE": []}
     for i in range(n_ppd):
-        p = {n: d[n][i] for n in d.keys()}
-        print(p)
+        p = {n: ppd_params[n][i] for n in ppd_params.keys()}
         params_update = {"cosmological_parameters" :
                             {"omch2":         p["omegach2"],
                              "ombh2":         p["omegabh2"],
@@ -305,9 +315,26 @@ if __name__ == "__main__":
         block = config.run_pipeline(defaults={**PATHS, **DATA_DIRS})
         ppd_blocks.append(block)
 
-        block["shear_cl_binned"][f"bin_{}_{}"]
+        Cls = []
+        for idx in field_idx_EE:
+            Cls.append(block["shear_cl_binned", f"bin_{idx[0]+1}_{idx[1]+1}"])
+        tpd_Cls["EE"].append(np.array(Cls).T)
+        Cls = []
+        for idx in field_idx_TE:
+            Cls.append(block["shear_y_cl_beam_pixwin_binned", f"bin_{idx[0]+1}_{idx[1]+1}"])
+        tpd_Cls["TE"].append(np.array(Cls).T)
 
-    with open(args.output_file, "wb") as f:
+        data_vector_sample = block["data_vector",
+                                   "shear_y_like_sim_data_vector_unmasked"]
+        d_EE = data_vector_sample[:len(field_idx_EE)*n_ell_bin].reshape(-1, n_ell_bin).T
+        d_TE = data_vector_sample[len(field_idx_EE)*n_ell_bin:].reshape(-1, n_ell_bin).T
+        ppd_Cls["EE"].append(d_EE)
+        ppd_Cls["TE"].append(d_TE)
+
+        np.savez(os.path.join(args.output_dir, "tpd_Cls.npz"), **{k: np.array(d) for k, d in tpd_Cls.items()})
+        np.savez(os.path.join(args.output_dir, "ppd_Cls.npz"), **{k: np.array(d) for k, d in ppd_Cls.items()})
+    
+    with open(os.path.join(args.output_dir, "blocks.pickle"), "wb") as f:
         pickle.dump(ppd_blocks, f)
 
     # sampler = "test"

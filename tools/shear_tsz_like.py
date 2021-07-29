@@ -132,6 +132,8 @@ def setup(options):
     if cov.shape[0] != len(data_vector_mask):
         raise RuntimeError("Missmatch in covariance and mask shape")
 
+    cov_unmasked = cov.copy()
+    L_cov_unmasked = np.linalg.cholesky(cov_unmasked)
     cov = cov[np.ix_(data_vector_mask, data_vector_mask)]
     inv_cov = np.linalg.inv(cov)
 
@@ -158,14 +160,14 @@ def setup(options):
 
     return (data_vector, inv_cov, window_functions,
             indices, do_cosmic_shear, do_shear_y,
-            n_z_bin, data_vector_mask, cov,
+            n_z_bin, data_vector_mask, cov, L_cov_unmasked,
             section_names, binned_suffix, like_name)
 
 
 def execute(block, config):
     (data_vector, inv_cov, window_functions,
         indices, do_cosmic_shear, do_shear_y,
-        n_z_bin, data_vector_mask, cov,
+        n_z_bin, data_vector_mask, cov, L_cov_unmasked,
         section_names, binned_suffix, like_name) = config
 
     mu = []
@@ -224,7 +226,11 @@ def execute(block, config):
 
     mu = np.concatenate(mu)
     block[names.data_vector, like_name+"_theory_vector_unmasked"] = mu
+    sim_data_vector = mu + L_cov_unmasked @ np.random.normal(size=mu.size)
+    block[names.data_vector,
+          like_name+"_sim_data_vector_unmasked"] = sim_data_vector
     mu = mu[data_vector_mask]
+    sim_data_vector = sim_data_vector[data_vector_mask]
 
     r = data_vector - mu
     chi2 = r @ inv_cov @ r
@@ -234,6 +240,7 @@ def execute(block, config):
     block[names.likelihoods, like_name+"_LIKE"] = ln_like
 
     block[names.data_vector, like_name+"_data_vector"] = data_vector
+    block[names.data_vector, like_name+"_sim_vector"] = sim_data_vector
     block[names.data_vector, like_name+"_theory_vector"] = mu
     block[names.data_vector, like_name+"_covariance"] = cov
 

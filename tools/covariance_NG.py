@@ -620,15 +620,18 @@ class CovarianceCalculator:
 
 if __name__ == "__main__":
 
-    base_path = "../results/measurements/shear_KiDS1000_y_milca/"
+    # base_path = "../results/measurements/shear_KiDS1000_y_milca/"
+    base_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"
 
-    beam = 10.0
+    # beam = 10.0
+    beam = 1.6
 
     # b = np.loadtxt("../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952.txt")
     # binning_operator = {"EE": b, "TE": b}
 
     binning_operator = {"EE": np.load("../results/measurements/shear_KiDS1000_shear_KiDS1000/data/pymaster_bandpower_windows_4-4.npy")[0, :, 0],  # noqa: E501
-                        "TE": np.load("../results/measurements/shear_KiDS1000_y_milca/data/pymaster_bandpower_windows_4-0.npy")[0, :, 0]}         # noqa: E501
+                        # "TE": np.load("../results/measurements/shear_KiDS1000_y_milca/data/pymaster_bandpower_windows_4-0.npy")[0, :, 0]}         # noqa: E501
+                        "TE": np.load("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/data/pymaster_bandpower_windows_4-0.npy")[0, :, 0]}         # noqa: E501
 
     # From data/xcorr/cov/W_l/
     # in sr
@@ -639,24 +642,32 @@ if __name__ == "__main__":
                        "KiDS1000_cel_ACT_BN_Planck_gal40_ps_overlap": 0.0825}
 
     fsky_EE = footprint_areas["KiDS1000"]/(4*np.pi)
-    fsky_TE = footprint_areas["KiDS1000_Planck_gal40_ps_overlap"]/(4*np.pi)
+    # fsky_TE = footprint_areas["KiDS1000_Planck_gal40_ps_overlap"]/(4*np.pi)
+    fsky_TE = footprint_areas["KiDS1000_cel_ACT_BN_Planck_gal40_ps_overlap"]/(4*np.pi)
 
     fsky = {"EEEE": fsky_EE,
             "TETE": fsky_TE,
             "EETE": np.sqrt(fsky_EE*fsky_TE)}
 
-    mask_wl_files = {"EEEE": "../data/xcorr/cov/W_l/shear_KiDS1000_binary_auto.txt",                                  # noqa: E501
-                     "TETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_binary.txt",                       # noqa: E501
-                     "EETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_binary.txt"}                       # noqa: E501
+    # mask_wl_files = {"EEEE": "../data/xcorr/cov/W_l/shear_KiDS1000_binary_auto.txt",                                  # noqa: E501
+    #                  "TETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_binary.txt",                       # noqa: E501
+    #                  "EETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_binary.txt"}                       # noqa: E501
 
-    mask_wl_overlap_files = {"EEEE": "../data/xcorr/cov/W_l/shear_KiDS1000_binary_auto.txt",                          # noqa: E501
-                             "TETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_overlap_binary_auto.txt",  # noqa: E501
-                             "EETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_overlap_binary_auto.txt"}  # noqa: E501
+    mask_wl_files = {"EEEE": "../data/xcorr/cov/W_l/shear_KiDS1000_binary_auto.txt",                                  # noqa: E501
+                     "TETE": "../data/xcorr/cov/W_l/shear_KiDS1000_cel_ACT_BN_Planck_gal40_ps_binary.txt",                       # noqa: E501
+                     "EETE": "../data/xcorr/cov/W_l/shear_KiDS1000_cel_ACT_BN_Planck_gal40_ps_binary.txt"}                       # noqa: E501
+
+
+    # mask_wl_overlap_files = {"EEEE": "../data/xcorr/cov/W_l/shear_KiDS1000_binary_auto.txt",                          # noqa: E501
+    #                          "TETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_overlap_binary_auto.txt",  # noqa: E501
+    #                          "EETE": "../data/xcorr/cov/W_l/shear_KiDS1000_Planck_gal40_ps_overlap_binary_auto.txt"}  # noqa: E501
 
     mask_wl = {k: np.loadtxt(f, usecols=[1]) for k, f in mask_wl_files.items()}
-    mask_wl_overlap = {k: np.loadtxt(f, usecols=[1]) for k, f in mask_wl_overlap_files.items()}          # noqa: E501
+    # mask_wl_overlap = {k: np.loadtxt(f, usecols=[1]) for k, f in mask_wl_overlap_files.items()}          # noqa: E501
 
-    prediction_path = "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/"        # noqa: E501
+    # prediction_path = "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/"        # noqa: E501
+    prediction_path = "../runs/cov_theory_predictions_run3_hmx_nocib_beam1.6/output/data_block/"        # noqa: E501
+
     cosmo_params = load_cosmosis_params(prediction_path)
     halo_model_params = load_cosmosis_params(prediction_path, "halo_model_parameters")                 # noqa: E501
 
@@ -696,17 +707,17 @@ if __name__ == "__main__":
     except FileNotFoundError:
         cov = {}
 
-    cov["KiDS-1000xtSZ SSC disc"] = cov_calculator.compute_NG_covariance(
-                            mode="SSC",
-                            cov_blocks=["TETE", "EETE", "EEEE", "joint"],
-                            binning_operator=binning_operator,
-                            beam_operator=beam_operator,
-                            fsky=fsky,
-                            halo_model="hmx",
-                            n_ell_intp=100)
-    with open(
-            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
-        pickle.dump(cov, f)
+    # cov["KiDS-1000xtSZ SSC disc"] = cov_calculator.compute_NG_covariance(
+    #                         mode="SSC",
+    #                         cov_blocks=["TETE", "EETE", "EEEE", "joint"],
+    #                         binning_operator=binning_operator,
+    #                         beam_operator=beam_operator,
+    #                         fsky=fsky,
+    #                         halo_model="hmx",
+    #                         n_ell_intp=100)
+    # with open(
+    #         os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
+    #     pickle.dump(cov, f)
 
     cov["KiDS-1000xtSZ SSC mask"] = cov_calculator.compute_NG_covariance(
                             mode="SSC",
@@ -720,18 +731,18 @@ if __name__ == "__main__":
             os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
         pickle.dump(cov, f)
 
-    cov["KiDS-1000xtSZ SSC mask overlap"] = \
-        cov_calculator.compute_NG_covariance(
-                            mode="SSC",
-                            cov_blocks=["TETE", "EETE", "EEEE", "joint"],
-                            binning_operator=binning_operator,
-                            beam_operator=beam_operator,
-                            mask_wl=mask_wl_overlap,
-                            halo_model="hmx",
-                            n_ell_intp=100)
-    with open(
-            os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
-        pickle.dump(cov, f)
+    # cov["KiDS-1000xtSZ SSC mask overlap"] = \
+    #     cov_calculator.compute_NG_covariance(
+    #                         mode="SSC",
+    #                         cov_blocks=["TETE", "EETE", "EEEE", "joint"],
+    #                         binning_operator=binning_operator,
+    #                         beam_operator=beam_operator,
+    #                         mask_wl=mask_wl_overlap,
+    #                         halo_model="hmx",
+    #                         n_ell_intp=100)
+    # with open(
+    #         os.path.join(base_path, "cov_NG/cov_NG.pickle"), "wb") as f:
+    #     pickle.dump(cov, f)
 
     cov["KiDS-1000xtSZ cNG"] = cov_calculator.compute_NG_covariance(
                             mode="cNG",
@@ -763,11 +774,11 @@ if __name__ == "__main__":
         if cov_block == "joint":
             fsky_str = f"{fsky}"
             mask_wl_str = f"{mask_wl_files}"
-            mask_wl_overlap_str = f"{mask_wl_overlap_files}"
+            # mask_wl_overlap_str = f"{mask_wl_overlap_files}"
         else:
             fsky_str = f"{fsky[cov_block]}"
             mask_wl_str = f"{mask_wl_files[cov_block]}"
-            mask_wl_overlap_str = f"{mask_wl_overlap_files[cov_block]}"
+            # mask_wl_overlap_str = f"{mask_wl_overlap_files[cov_block]}"
 
         header = misc_utils.file_header(
                     f"Covariance {cov_block} m_correction, sigma_m=[0.019, 0.020, 0.017, 0.012, 0.010]")                # noqa: E501
@@ -777,13 +788,13 @@ if __name__ == "__main__":
                 f"likelihood/cov/covariance_m_{cov_block}.txt"),
             cov["KiDS-1000xtSZ m"][cov_block], header=header)
 
-        header = misc_utils.file_header(
-                    f"Covariance HMx {cov_block} SSC, disc geometry fsky={fsky_str}")                                   # noqa: E501
-        np.savetxt(
-            os.path.join(
-                base_path,
-                f"likelihood/cov/covariance_hmx_SSC_disc_{cov_block}.txt"),
-            cov["KiDS-1000xtSZ SSC disc"][cov_block], header=header)
+        # header = misc_utils.file_header(
+        #             f"Covariance HMx {cov_block} SSC, disc geometry fsky={fsky_str}")                                   # noqa: E501
+        # np.savetxt(
+        #     os.path.join(
+        #         base_path,
+        #         f"likelihood/cov/covariance_hmx_SSC_disc_{cov_block}.txt"),
+        #     cov["KiDS-1000xtSZ SSC disc"][cov_block], header=header)
 
         header = misc_utils.file_header(
                     f"Covariance HMx {cov_block} SSC, mask, overlap only. Mask power file: {mask_wl_str}")              # noqa: E501
@@ -793,14 +804,14 @@ if __name__ == "__main__":
                 f"likelihood/cov/covariance_hmx_SSC_mask_wl_{cov_block}.txt"),
             cov["KiDS-1000xtSZ SSC mask"][cov_block], header=header)
 
-        header = misc_utils.file_header(
-                    f"Covariance HMx {cov_block} SSC, mask, overlap only. Mask power file: {mask_wl_overlap_str}")      # noqa: E501
-        np.savetxt(
-            os.path.join(
-                base_path,
-                f"likelihood/cov/"
-                f"covariance_hmx_SSC_mask_wl_overlap_{cov_block}.txt"),
-            cov["KiDS-1000xtSZ SSC mask overlap"][cov_block], header=header)
+        # header = misc_utils.file_header(
+        #             f"Covariance HMx {cov_block} SSC, mask, overlap only. Mask power file: {mask_wl_overlap_str}")      # noqa: E501
+        # np.savetxt(
+        #     os.path.join(
+        #         base_path,
+        #         f"likelihood/cov/"
+        #         f"covariance_hmx_SSC_mask_wl_overlap_{cov_block}.txt"),
+        #     cov["KiDS-1000xtSZ SSC mask overlap"][cov_block], header=header)
 
         header = misc_utils.file_header(
                     f"Covariance HMx EEEE cNG, 1h fsky={fsky_str}")
