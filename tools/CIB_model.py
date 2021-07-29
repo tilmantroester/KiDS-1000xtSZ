@@ -123,14 +123,14 @@ class CIBModel:
     def save_state(self, state_file):
         torch.save(self.model.state_dict(), state_file)
 
-    def train(self, n_step=100, progress_bar=True):
+    def train(self, n_step=100, lr=0.1, progress_bar=True):
         training_iterations = n_step
 
         self.model.train()
         self.likelihood.train()
 
         # Includes GaussianLikelihood parameters
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=0.1)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood,
                                                        self.model)

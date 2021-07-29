@@ -97,19 +97,20 @@ if __name__ == "__main__":
 
     if mode == "namaster":
         compute_prediction_for_cov = False
+        make_plots = True
 
-        field = "545GHz_CIB"
         probe = "TE"
+        field = "545GHz_CIB"
         label = f"KiDS-1000 x 545 GHz CIB, {probe}"
-        units = r"[%\mu$K]"
+        units = r"[mJy]"
 
         # field = "100GHz_HFI"
         # probe = "TE"
         # label = f"KiDS-1000 x 100 GHz HFI, {probe}"
         # units = r"[$\mathrm{K}_\mathrm{CMB}$]"
 
-        data_file = f"../results/measurements/shear_KiDS1000_{field}/likelihood/Cl_{probe}_gal.txt"
-        cov_file = f"../results/measurements/shear_KiDS1000_{field}/likelihood/covariance_gal_gaussian_{probe}.txt"
+        data_file = f"../results/measurements/shear_KiDS1000_{field}/likelihood/data/Cl_{probe}_shear_KiDS1000_gal_{field}.txt"
+        cov_file = f"../results/measurements/shear_KiDS1000_{field}/likelihood/cov/covariance_gaussian_nka_{probe}{probe}.txt"
 
         data = np.loadtxt(data_file)
         ell_data = data[:, 0]
@@ -250,6 +251,13 @@ if __name__ == "__main__":
 
         CIB_model = CIBModel(X, Y, Y_cov)
 
+        # CIB_model.load_state(f"../results/measurements/shear_KiDS1000_{field}/GP_model/GP_state")
+        CIB_model.train(n_step=5000, lr=1e-2)
+        CIB_model.print_model_parameters()
+        print("Chi2:", CIB_model.chi2())
+
+        CIB_model.save_state(f"../results/measurements/shear_KiDS1000_{field}/GP_model/GP_state.torchstate")
+
         # ell_pred = np.geomspace(51, 3000, 100)
         ell_pred = np.arange(51, 2953)
         CIB_prediction, CI = CIB_model.predict(np.log10(ell_pred), CI=True)
@@ -260,18 +268,19 @@ if __name__ == "__main__":
 
         n_ell, n_z = CIB_prediction.shape
 
-        plot_Cls(Cls=[{"X": ell_data, "Y": data.T,
-                       "Y_err": np.sqrt(np.diag(cov)),
-                       "marker": "o", "ls": "none", "c": "C0",
-                       "label": label},
-                      {"X": ell_pred, "Y": CIB_prediction.T,
-                       "Y_lower": CIB_prediction_CI_l.T,
-                       "Y_upper": CIB_prediction_CI_u.T,
-                       "alpha": 0.5,  "c": "C1",
-                       "label": "GP"}],
-                 ylabel=r"$\ell^2/2\pi\ C_\ell$ " + units,
-                 title=f"{label}, GP model",
-                 filename=f"../notebooks/plots/CIB_model_{field}_{probe}_beam10.png")
+        if make_plots:
+            plot_Cls(Cls=[{"X": ell_data, "Y": data.T,
+                        "Y_err": np.sqrt(np.diag(cov)),
+                        "marker": "o", "ls": "none", "c": "C0",
+                        "label": label},
+                        {"X": ell_pred, "Y": CIB_prediction.T,
+                        "Y_lower": CIB_prediction_CI_l.T,
+                        "Y_upper": CIB_prediction_CI_u.T,
+                        "alpha": 0.5,  "c": "C1",
+                        "label": "GP"}],
+                    ylabel=r"$\ell^2/2\pi\ C_\ell$ " + units,
+                    title=f"{label}, GP model",
+                    filename=f"../notebooks/plots/CIB_model_{field}_{probe}_beam10.png")
 
 
         if compute_prediction_for_cov:

@@ -14,32 +14,39 @@ if __name__ == "__main__":
     base_path_EE = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_nilc/"
-    base_path_TE = "../results/measurements/shear_KiDS1000_y_yan2019_nocib/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_y_yan2019_nocib/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"
 
 
     # base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
+    base_path_TE = "../results/measurements/shear_KiDS1000_100GHz_HFI/"
 
     Cl_suffix = "gal"
 
     field_description = {"E": "KiDS-1000, galactic coordinates",
                         #  "T": "Planck Compton-y MILCA"
                         #  "T": "Planck Compton-y NILC",
-                         "T": "Planck Compton-y Yan et al. 2019, CIB subtracted"
+                        #  "T": "Planck Compton-y Yan et al. 2019, CIB subtracted"
 
                         #  "E": "KiDS-1000, celestial coordinates",
                         #  "T": "ACT BN Compton-y"
                         #  "T": "ACT BN Compton-y, CIB deprojected"
+
+                        #  "T": "Planck 545 GHz CIB"
+                        "T": "Planck 100 GHz HFI"
                          }
     field_tag = {"E": "shear_KiDS1000_gal",
                 #  "T": "y_milca",
                 #  "T": "y_nilc",
-                 "T": "y_yan2019_nocib"
+                #  "T": "y_yan2019_nocib"
 
                 #  "E": "shear_KiDS1000_cel",
                 #  "T": "ACT_BN"
                 #  "T": "ACT_BN_nocib"
+
+                # "T": "545GHz_CIB"
+                "T": "100GHz_HFI"
                  }
 
     probes = ["TE", "TB"]
@@ -177,7 +184,7 @@ if __name__ == "__main__":
                 c = np.load(os.path.join(
                             covariance_paths["TETE"],
                             f"cov_shear_{idx_a1}_foreground_{idx_a2}_"
-                            f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["aaaa"]
+                            f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["ssss"]
                 c = c.reshape(n_ell_bin_TE, 2, n_ell_bin_TE, 2)
 
                 cov_gaussian["TETE"][i*n_ell_bin_TE: (i+1)*n_ell_bin_TE,
