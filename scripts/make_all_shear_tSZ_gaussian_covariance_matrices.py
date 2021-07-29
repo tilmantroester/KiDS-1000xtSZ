@@ -3,36 +3,44 @@ import os
 
 
 if __name__ == "__main__":
-    workspace_path_EE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
-                         "shear_KiDS1000_shear_KiDS1000/")
-    workspace_path_TE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
-                         "shear_KiDS1000_y_milca/")
-
     # workspace_path_EE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
-    #                      "shear_KiDS1000_shear_KiDS1000_cel/")
+    #                      "shear_KiDS1000_shear_KiDS1000/")
     # workspace_path_TE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
-    #                      "shear_KiDS1000_cel_y_ACT_BN/")
+    #                      "shear_KiDS1000_y_milca/")
+
+    workspace_path_EE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
+                         "shear_KiDS1000_shear_KiDS1000_cel/")
+    workspace_path_TE = ("/disk09/ttroester/project_triad/namaster_workspaces/"
+                         "shear_KiDS1000_cel_y_ACT_BN/")
 
     # Planck milca
-    Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",  # noqa: E501
-                    "shear-foreground", "../results/measurements/shear_KiDS1000_y_milca/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",    # noqa: E501
-                    "foreground-foreground", "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]     # noqa: E501
-    output_path = "../results/measurements/shear_KiDS1000_y_milca/cov_3x2pt_MAP/nka/"
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",   # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_y_milca/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",     # noqa: E501
+    #                 "foreground-foreground", "../results/measurements/y_milca_y_milca/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]            # noqa: E501
+    # output_path = "../results/measurements/shear_KiDS1000_y_milca/cov_3x2pt_MAP/nka/"
+
+    # Planck nilc
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",  # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_y_milca/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",    # noqa: E501
+    #                 "foreground-foreground", "../results/measurements/y_nilc_y_nilc/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]     # noqa: E501
+    # output_path = "../results/measurements/shear_KiDS1000_y_nilc/cov_3x2pt_MAP/nka/"
+
     # Ziang's map
-    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501
-    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_y_ziang_nocib/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",       # noqa: E501
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",  # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_y_milca/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",        # noqa: E501
     #                 "foreground-foreground", "../results/measurements/y_ziang_nocib_y_ziang_nocib/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
-    # output_path = "../results/measurements/shear_KiDS1000_y_ziang_nocib/cov/"
+    # output_path = "../results/measurements/shear_KiDS1000_y_ziang_nocib/cov_3x2pt_MAP/nka/"
+
     # ACT BN
-    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501
-    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_Cls/Cl_cov_{}-{}.npz",       # noqa: E501
-    #                 "foreground-foreground", "../results/measurements/y_ACT_BN_y_ACT_BN/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
-    # output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov/"
+    Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",   # noqa: E501
+                    "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",       # noqa: E501
+                    "foreground-foreground", "../results/measurements/y_ACT_BN_y_ACT_BN/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
+    output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_3x2pt_MAP/nka/"
     # ACT BN nocib
-    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501
-    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/cov_Cls/Cl_cov_{}-{}.npz",       # noqa: E501
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",   # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",       # noqa: E501
     #                 "foreground-foreground", "../results/measurements/y_ACT_BN_nocib_y_ACT_BN_nocib/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
-    # output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/cov/"
+    # output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/cov_3x2pt_MAP/nka/"
 
     # Planck 100 GHz HFI, zero cross-correlation
     # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501

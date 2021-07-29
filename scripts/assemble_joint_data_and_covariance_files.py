@@ -14,29 +14,32 @@ if __name__ == "__main__":
     base_path_EE = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_nilc/"
-    # base_path_TE = "../results/measurements/shear_KiDS1000_y_ziang_nocib/"
-    base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"
+    base_path_TE = "../results/measurements/shear_KiDS1000_y_yan2019_nocib/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"
 
 
     # base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
 
-    Cl_suffix = "cel"
+    Cl_suffix = "gal"
 
-    field_description = {#"E": "KiDS-1000, galactic coordinates",
+    field_description = {"E": "KiDS-1000, galactic coordinates",
                         #  "T": "Planck Compton-y MILCA"
                         #  "T": "Planck Compton-y NILC",
-                        #  "T": "Planck Compton-y Ziang, CIB subtracted"
+                         "T": "Planck Compton-y Yan et al. 2019, CIB subtracted"
 
-                         "E": "KiDS-1000, celestial coordinates",
-                         "T": "ACT BN Compton-y, CIB deprojected"
+                        #  "E": "KiDS-1000, celestial coordinates",
+                        #  "T": "ACT BN Compton-y"
+                        #  "T": "ACT BN Compton-y, CIB deprojected"
                          }
-    field_tag = {#"E": "shear_KiDS1000_gal",
+    field_tag = {"E": "shear_KiDS1000_gal",
                 #  "T": "y_milca",
                 #  "T": "y_nilc",
-                #  "T": "y_ziang_nocib"
+                 "T": "y_yan2019_nocib"
 
-                "E": "shear_KiDS1000_cel",
-                 "T": "ACT_BN_nocib"
+                #  "E": "shear_KiDS1000_cel",
+                #  "T": "ACT_BN"
+                #  "T": "ACT_BN_nocib"
                  }
 
     probes = ["TE", "TB"]
