@@ -3,7 +3,7 @@ import os
 
 
 if __name__ == "__main__":
-    galactic_coordinates = False
+    galactic_coordinates = True
 
     bin_operator_file = "../data/xcorr/bin_operator_log_n_bin_12_ell_51-2952_namaster.txt"                              # noqa: E501
 
@@ -36,11 +36,16 @@ if __name__ == "__main__":
     #                          "data/Cl_gal_{}-{}.npz")
     # Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_y_ziang_nocib/"            # noqa: E501
     #                         "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
+    # Ziang's CIB deprojected map, beta=1.2
+    Cl_data_file_template = ("../results/measurements_incl_m/shear_KiDS1000_y_yan2019_nocib_beta1.2/"           # noqa: E501
+                             "data/Cl_gal_{}-{}.npz")
+    Cl_cov_file_template = ("../results/measurements_incl_m/shear_KiDS1000_y_yan2019_nocib_beta1.2/"            # noqa: E501
+                            "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
     # ACT BN
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"           # noqa: E501
     #                          "data/Cl_cel_{}-{}.npz")
-    Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"            # noqa: E501
-                            "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
+    # Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"            # noqa: E501
+    #                         "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
     # ACT BN nocib
     # Cl_data_file_template = ("../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"           # noqa: E501
     #                          "data/Cl_cel_{}-{}.npz")
@@ -67,6 +72,10 @@ if __name__ == "__main__":
                          "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.7-0.9.npz",     # noqa: E501
                          "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.9-1.2.npz"]     # noqa: E501
 
+    m_bias_old = [-0.009, -0.011, -0.015, 0.002, 0.007]
+    m_bias_new = [-0.010, -0.009, -0.011, 0.008, 0.012]
+    m_bias = m_bias_new
+
     foreground_beam = None
 
     # Planck milca
@@ -79,9 +88,12 @@ if __name__ == "__main__":
     # Ziang's CIB deprojected map
     # foreground_map = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_nomockcib_v1.02_bp.fits"  # noqa: E501
     # foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
+    # Ziang's CIB deprojected map, beta=1.2
+    foreground_map = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_nomockcib_v1.02_bp_beta1.2.fits"  # noqa: E501
+    foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
     # ACT BN
-    foreground_map = "../data/y_maps/ACT/BN.fits"
-    foreground_mask = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
+    # foreground_map = "../data/y_maps/ACT/BN.fits"
+    # foreground_mask = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
     # ACT BN nocib
     # foreground_map = "../data/y_maps/ACT/BN_deproject_cib.fits"
     # foreground_mask = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
@@ -94,16 +106,16 @@ if __name__ == "__main__":
     # foreground_map = "../data/CIB_maps/CIB-GNILC-F545_beam10.fits"
     # foreground_mask = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"
 
-    # theory_run_name = "cov_theory_predictions_run1_hmx_nz128_beam10"
-    theory_run_name = "cov_theory_predictions_run3_hmx_nocib_beam1.6"
+    theory_run_name = "cov_theory_predictions_run1_hmx_nz128_beam10"
+    # theory_run_name = "cov_theory_predictions_run3_hmx_nocib_beam1.6"
 
-    raw_ell_file = f"../runs/{theory_run_name}/output/data_block/shear_y_cl/ell.txt"  # noqa: E501
+    raw_ell_file = f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl/ell.txt"  # noqa: E501
 
-    raw_Cl_files = [f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_1_1.txt",  # noqa: E501
-                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_2_1.txt",  # noqa: E501
-                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_3_1.txt",  # noqa: E501
-                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_4_1.txt",  # noqa: E501
-                    f"../runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_5_1.txt",  # noqa: E501
+    raw_Cl_files = [f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_1_1.txt",  # noqa: E501
+                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_2_1.txt",  # noqa: E501
+                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_3_1.txt",  # noqa: E501
+                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_4_1.txt",  # noqa: E501
+                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_5_1.txt",  # noqa: E501
                     ]
 
     os.environ["OMP_NUM_THREADS"] = "20"
@@ -121,6 +133,7 @@ if __name__ == "__main__":
         cmd += ["--Cl-signal-ell-file", raw_ell_file]
 
         cmd += ["--shear-catalogs", catalog_files[idx[0]]]
+        cmd += ["--shear-m", str(m_bias[idx[0]])]
 
         cmd += ["--foreground-map", foreground_map]
         cmd += ["--foreground-mask", foreground_mask]

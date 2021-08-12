@@ -217,6 +217,7 @@ if __name__ == "__main__":
     parser.add_argument("--foreground-beam")
 
     parser.add_argument("--shear-catalogs", nargs="+")
+    parser.add_argument("--shear-m", nargs="+")
 
     parser.add_argument("--Cl-signal-files", nargs="+")
     parser.add_argument("--Cl-signal-ell-file")
@@ -418,7 +419,14 @@ if __name__ == "__main__":
         e1_sign = -1 if flip_e1 else 1
         e2_sign = -1 if flip_e2 else 1
 
-        for probe, shear_catalog_file in zip(probes, args.shear_catalogs):
+        if args.shear_m is not None:
+            m_biases = [float(m) for m in args.shear_m]
+        else:
+            m_biases = [0.0] * len(probes)
+
+        for probe, shear_catalog_file, m_bias in zip(probes,
+                                                     args.shear_catalogs,
+                                                     m_biases):
             print("Probe ", probe)
             print("  Loading shear catalog: ", shear_catalog_file)
             shear_data[probe] = np.load(shear_catalog_file)
@@ -430,6 +438,10 @@ if __name__ == "__main__":
                                             shear_data[probe]["pixel_idx"],
                                             return_w2_sigma2=True)
             good_pixel_map[probe] = w_map[probe] > 0
+
+            print("    Applying m-bias: ", m_bias)
+            e1_map = e1_map / (1 + m_bias)
+            e2_map = e2_map / (1 + m_bias)
 
             if binary_mask:
                 mean_w2_sigma2[probe] = np.sum(
