@@ -797,7 +797,7 @@ if __name__ == "__main__":
         #     cov["KiDS-1000xtSZ SSC disc"][cov_block], header=header)
 
         header = misc_utils.file_header(
-                    f"Covariance HMx {cov_block} SSC, mask, overlap only. Mask power file: {mask_wl_str}")              # noqa: E501
+                    f"Covariance HMx {cov_block} SSC, mask. Mask power file: {mask_wl_str}")              # noqa: E501
         np.savetxt(
             os.path.join(
                 base_path,
