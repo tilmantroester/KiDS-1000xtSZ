@@ -15,12 +15,12 @@ if __name__ == "__main__":
     # tag = "exact_noise_mixed_terms"
     # key = "nnnn"
     # tag = "exact_noise"
-    # key = "aaaa"
-    # tag = "nka"
+    key = "aaaa"
+    tag = "nka"
     # key = "ssss"
     # tag = "nka_sva"
-    key = "nnnn"
-    tag = "nka_noise"
+    # key = "nnnn"
+    # tag = "nka_noise"
 
     if tag[:3] == "nka":
         input_dir = "nka"
@@ -36,20 +36,15 @@ if __name__ == "__main__":
         covariance_file_template = ("cov_shear_{}_shear_{}_"
                                     "shear_{}_shear_{}.npz")
 
-    data_Cl_path = ("../results/measurements_incl_m/"
-                    "shear_KiDS1000_shear_KiDS1000/data/")
+    base_path = "../results/measurements_incl_m/shear_KiDS1000_shear_KiDS1000/"
 
-    Cl_file = {"EE": ("../results/measurements_incl_m/"
-                      "shear_KiDS1000_shear_KiDS1000/likelihood/data/Cl_EE_shear_KiDS1000_gal_new_m.txt"),
-               "BB": ("../results/measurements_incl_m/"
-                      "shear_KiDS1000_shear_KiDS1000/likelihood/data/Cl_BB_shear_KiDS1000_gal_new_m.txt")}
+    data_Cl_path = os.path.join(base_path, "data/")
 
-    covariance_file = {"EEEE": (f"../results/measurements_incl_m/"
-                                f"shear_KiDS1000_shear_KiDS1000/likelihood/cov/"
-                                f"covariance_gaussian_{tag}_EEEE.txt"),
-                       "BBBB": (f"../results/measurements_incl_m/"
-                                f"shear_KiDS1000_shear_KiDS1000/likelihood/cov/"
-                                f"covariance_gaussian_{tag}_BBBB.txt")}
+    Cl_file = {"EE": os.path.join(base_path, "likelihood/data/Cl_EE_shear_KiDS1000_gal_new_m.txt"),
+               "BB": os.path.join(base_path, "likelihood/data/Cl_BB_shear_KiDS1000_gal_new_m.txt")}
+
+    covariance_file = {"EEEE": os.path.join(base_path, f"likelihood/cov/covariance_gaussian_{tag}_EEEE.txt"),
+                       "BBBB": os.path.join(base_path, f"likelihood/cov/covariance_gaussian_{tag}_BBBB.txt")}
 
     os.makedirs(os.path.split(Cl_file["EE"])[0], exist_ok=True)
     os.makedirs(os.path.split(covariance_file["EEEE"])[0], exist_ok=True)

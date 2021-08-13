@@ -14,8 +14,12 @@ sys.path.append("../tools/")
 from misc_utils import printflush  # noqa: E402
 
 
-def make_maps(nside, e1, e2, w, idx, rotate=False, return_w2_sigma2=False):
+def make_maps(nside, e1, e2, w, idx, rotate=False, return_w2_sigma2=False,
+              m=0.0):
     n_pix = healpy.nside2npix(nside)
+
+    e1 /= (1+m)
+    e2 /= (1+m)
 
     if rotate:
         alpha = np.pi*np.random.rand(len(e1))
@@ -420,15 +424,17 @@ if __name__ == "__main__":
         e2_sign = -1 if flip_e2 else 1
 
         if args.shear_m is not None:
-            m_biases = [float(m) for m in args.shear_m]
+            m_biases = {p: float(m) for p, m in zip(probes, args.shear_m)}
         else:
-            m_biases = [0.0] * len(probes)
+            m_biases = {p: 0.0 for p in probes}
 
-        for probe, shear_catalog_file, m_bias in zip(probes,
-                                                     args.shear_catalogs,
-                                                     m_biases):
+        for probe, shear_catalog_file in zip(probes,
+                                             args.shear_catalogs):
+            m_bias = m_biases[probe]
             print("Probe ", probe)
             print("  Loading shear catalog: ", shear_catalog_file)
+            print("    Applying m-bias: ", m_bias)
+
             shear_data[probe] = np.load(shear_catalog_file)
             e1_map, e2_map, w_map[probe], w2_s2_map = make_maps(
                                             nside,
@@ -436,12 +442,9 @@ if __name__ == "__main__":
                                             e2_sign*shear_data[probe]["e2"],
                                             shear_data[probe]["w"],
                                             shear_data[probe]["pixel_idx"],
-                                            return_w2_sigma2=True)
+                                            return_w2_sigma2=True,
+                                            m=m_bias)
             good_pixel_map[probe] = w_map[probe] > 0
-
-            print("    Applying m-bias: ", m_bias)
-            e1_map = e1_map / (1 + m_bias)
-            e2_map = e2_map / (1 + m_bias)
 
             if binary_mask:
                 mean_w2_sigma2[probe] = np.sum(
@@ -553,7 +556,8 @@ if __name__ == "__main__":
                                             e2_sign*shear_data[probe]["e2"],
                                             shear_data[probe]["w"],
                                             shear_data[probe]["pixel_idx"],
-                                            rotate=True)
+                                            rotate=True,
+                                            m=m_biases[probe])
 
             if Cl_signal is not None:
                 random_e1_map += signal_maps[probe][0]
