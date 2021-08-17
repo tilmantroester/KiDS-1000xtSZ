@@ -183,12 +183,13 @@ def execute(block, config):
             Cl_0 = np.zeros_like(Cl_EE)
             Cl_EE[2:] = log_interpolate(ell_data_block, Cl_data_block, ell[2:])
 
-            Cl_EE_binned, Cl_BB_binned = np.einsum("ibjl,jl->ib",
-                                     B, [Cl_EE, Cl_0, Cl_0, Cl_0])[[0, 3]]
+            Cl_EE_binned, Cl_BB_binned = np.einsum(
+                                        "ibjl,jl->ib",
+                                        B, [Cl_EE, Cl_0, Cl_0, Cl_0])[[0, 3]]
             block[section_names["shear_shear"] + "_" + binned_suffix,
-                                f"bin_{idx_1+1}_{idx_2+1}"] = Cl_EE_binned
-            block[section_names["shear_shear"] + "_" + binned_suffix + "BB_",
-                                f"bin_{idx_1+1}_{idx_2+1}"] = Cl_BB_binned
+                  f"bin_{idx_1+1}_{idx_2+1}"] = Cl_EE_binned
+            block[section_names["shear_shear"] + "_" + binned_suffix + "_BB",
+                  f"bin_{idx_1+1}_{idx_2+1}"] = Cl_BB_binned
             mu.append(Cl_EE_binned)
 
     if do_shear_y:
@@ -209,22 +210,28 @@ def execute(block, config):
 
             if do_shear_y_ia:
                 Cl_IA_data_block = block[section_names["shear_y_ia"], tag]
-                Cl_IA = np.zeros_like(ell)
+                Cl_IA = np.zeros_like(Cl_TE)
                 Cl_IA[2:] = log_interpolate(ell_data_block, Cl_IA_data_block,
                                             ell[2:])
                 Cl_TE += Cl_IA
 
             Cl_TE_binned, Cl_TB_binned = np.einsum("ibjl,jl->ib",
-                                     B, [Cl_TE, Cl_0])[[0, 1]]
+                                                   B, [Cl_TE, Cl_0])[[0, 1]]
 
             if do_cib:
                 Cl_CIB = block[section_names["shear_y_cib"], tag]
                 Cl_TE_binned += Cl_CIB
 
             block[section_names["shear_y"] + "_" + binned_suffix,
-                                f"bin_{idx+1}_1"] = Cl_TE_binned
-            block[section_names["shear_y"] + "_" + binned_suffix +"TB_",
-                                f"bin_{idx+1}_1"] = Cl_TB_binned
+                  f"bin_{idx+1}_1"] = Cl_TE_binned
+            block[section_names["shear_y"] + "_" + binned_suffix + "_TB",
+                  f"bin_{idx+1}_1"] = Cl_TB_binned
+
+            if do_shear_y_ia:
+                Cl_IA_binned = np.einsum("ibjl,jl->ib",
+                                         B, [Cl_IA, Cl_0])[0]
+                block[section_names["shear_y_ia"] + "_" + binned_suffix,
+                      tag] = Cl_IA_binned
 
             mu.append(Cl_TE_binned)
 
