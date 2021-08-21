@@ -7,7 +7,9 @@ __pycache__
 logs/
 runs/
 proto_runs/
-results/
+results/measurements_no_m
+results/measurements_new_m
+results/old_measurements
 data/
 
 scripts/parsl/
