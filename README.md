@@ -64,3 +64,8 @@ python assemble_joint_data_and_covariance_files.py
 ```
 python reduce_CIB_data.py
 ```
+
+## Add up covariance contributions
+```
+python add_up_covariance_terms.py
+```

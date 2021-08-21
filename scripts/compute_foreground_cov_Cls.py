@@ -28,16 +28,26 @@ if __name__ == "__main__":
     # cov_Cls_file = "../results/measurements/y_nilc_y_nilc/cov_Cls/Cl_cov_beam_deconv_raw_0-0.npz"                # noqa: E501
     # cov_Cls_smoothed_file = "../results/measurements/y_nilc_y_nilc/cov_Cls/Cl_cov_beam_deconv_smoothed_0-0.npz"  # noqa: E501
     # Ziang nocib
-    foreground_map_file = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_nomockcib_v1.02_bp.fits"      # noqa: E501
-    foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"                                 # noqa: E501
-    cov_Cls_file = "../results/measurements/y_ziang_nocib_y_ziang_nocib/cov_Cls/Cl_cov_raw_0-0.npz"                # noqa: E501
-    cov_Cls_smoothed_file = "../results/measurements/y_ziang_nocib_y_ziang_nocib/cov_Cls/Cl_cov_smoothed_0-0.npz"  # noqa: E501
+    # foreground_map_file = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_nomockcib_v1.02_bp.fits"      # noqa: E501
+    # foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"                                 # noqa: E501
+    # cov_Cls_file = "../results/measurements/y_ziang_nocib_y_ziang_nocib/cov_Cls/Cl_cov_raw_0-0.npz"                # noqa: E501
+    # cov_Cls_smoothed_file = "../results/measurements/y_ziang_nocib_y_ziang_nocib/cov_Cls/Cl_cov_smoothed_0-0.npz"  # noqa: E501
+    # Ziang nocib, neta=1.2
+    # foreground_map_file = "../data/y_maps/Planck_processed/ziang/ymap_rawcov_needlet_galmasked_nomockcib_v1.02_bp_beta1.2.fits"      # noqa: E501
+    # foreground_mask_file = "../data/y_maps/Planck_processed/mask_ps_gal40.fits"                                 # noqa: E501
+    # cov_Cls_file = "../results/measurements_incl_m/y_yan2019_nocib_beta1.2_y_yan2019_nocib_beta1.2/cov_Cls/Cl_cov_raw_0-0.npz"                # noqa: E501
+    # cov_Cls_smoothed_file = "../results/measurements_incl_m/y_yan2019_nocib_beta1.2_y_yan2019_nocib_beta1.2/cov_Cls/Cl_cov_smoothed_0-0.npz"  # noqa: E501
     # ACT BN
     # foreground_map_file = "../data/y_maps/ACT/BN.fits"
     # foreground_mask_file = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
     # ACT BN nocib
     # foreground_map_file = "../data/y_maps/ACT/BN_deproject_cib.fits"
     # foreground_mask_file = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
+    # ACT BN nomb
+    foreground_map_file = "../data/y_maps/ACT/BN_deproject_cmb.fits"
+    foreground_mask_file = "../data/y_maps/ACT/BN_planck_ps_gal40_mask.fits"
+    cov_Cls_file = "../results/measurements_incl_m/y_ACT_BN_nocmb_y_ACT_BN_nocmb/cov_Cls/Cl_cov_raw_0-0.npz"                # noqa: E501
+    cov_Cls_smoothed_file = "../results/measurements_incl_m/y_ACT_BN_nocmb_y_ACT_BN_nocmb/cov_Cls/Cl_cov_smoothed_0-0.npz"  # noqa: E501
 
     # Planck 100 GHz HFI
     # foreground_map_file = "/disk09/ttroester/Planck/frequency_maps/HFI_SkyMap_100_2048_R3.01_full.fits"

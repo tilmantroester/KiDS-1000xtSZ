@@ -13,8 +13,12 @@ if __name__ == "__main__":
                     for j in range(i+1)]
     field_idx_TE = [(i, 0) for i in range(n_z)]
 
-    TE_tag = "y_yan2019_nocib_beta1.2"
-
+    TE_tag = "y_milca"
+    # TE_tag = "y_nilc"
+    # TE_tag = "y_yan2019_nocib"
+    # TE_tag = "y_yan2019_nocib_beta1.2"
+    # TE_tag = "cel_y_ACT_BN"
+    # TE_tag = "cel_y_ACT_BN_nocmb"
     # TE_tag = "cel_y_ACT_BN_nocib"
     do_joint = True
     do_EEEE = True
@@ -22,8 +26,8 @@ if __name__ == "__main__":
     NG_base_path = "../data/xcorr/cov/NG_cov_Planck"
     # NG_base_path = "../data/xcorr/cov/NG_cov_ACT"
 
-    TE_base_path = f"../results/measurements_incl_m/shear_KiDS1000_{TE_tag}/likelihood/cov/"                    # noqa: E501
-    EE_base_path = "../results/measurements_incl_m/shear_KiDS1000_shear_KiDS1000/likelihood/cov/"               # noqa: E501
+    TE_base_path = f"../results/measurements/shear_KiDS1000_{TE_tag}/likelihood/cov/"                    # noqa: E501
+    EE_base_path = "../results/measurements/shear_KiDS1000_shear_KiDS1000/likelihood/cov/"               # noqa: E501
 
     cov_TETE = {tag: np.loadtxt(os.path.join(TE_base_path, f"covariance_{tag}_TETE.txt"))                # noqa: E501
                 for tag in ("gaussian_nka",)}
@@ -32,7 +36,7 @@ if __name__ == "__main__":
     cov_TBTB = {tag: np.loadtxt(os.path.join(TE_base_path, f"covariance_{tag}_TBTB.txt"))                # noqa: E501
                 for tag in ("gaussian_nka",)}
 
-    if do_EEEE:
+    if do_EEEE or do_joint:
         cov_EEEE = {tag: np.loadtxt(os.path.join(EE_base_path, f"covariance_gaussian_{tag}_EEEE.txt"))   # noqa: E501
                     for tag in ("exact_noise", "exact_noise_mixed_terms", "nka_sva", "nka")}             # noqa: E501
         cov_EEEE.update({tag: np.loadtxt(os.path.join(NG_base_path, f"covariance_{tag}_EEEE.txt"))       # noqa: E501
@@ -68,6 +72,9 @@ if __name__ == "__main__":
                                                 "hmx_cNG_1h",
                                                 "hmx_SSC_mask_wl",
                                                 "m"),
+                            "total_no_SSC":    ("gaussian_nka",
+                                                "hmx_cNG_1h",
+                                                "m"),
                             }
     contributions_TBTB = {  "total_gaussian":  ("gaussian_nka",)}
 
@@ -97,12 +104,12 @@ if __name__ == "__main__":
         np.savetxt(os.path.join(TE_base_path, f"covariance_{name}_TBTB.txt"),
                    cov_TBTB[name], header=header)
 
-    if do_EEEE:
-        for name, tags in contributions_EEEE.items():
-            cov_EEEE[name] = sum([cov_EEEE[tag] for tag in tags])
-        for name, tags in contributions_BBBB.items():
-            cov_BBBB[name] = sum([cov_BBBB[tag] for tag in tags])
+    for name, tags in contributions_EEEE.items():
+        cov_EEEE[name] = sum([cov_EEEE[tag] for tag in tags])
+    for name, tags in contributions_BBBB.items():
+        cov_BBBB[name] = sum([cov_BBBB[tag] for tag in tags])
 
+    if do_EEEE:
         for name, tags in contributions_EEEE.items():
             header = (f"Covariance {name} ({'+'.join(tags)}) of Cl_EE "
                       "(tomographic bins "

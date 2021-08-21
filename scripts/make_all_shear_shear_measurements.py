@@ -14,11 +14,11 @@ if __name__ == "__main__":
     bandpower_window_file_template = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"  # noqa: E501
                                       "data/pymaster_bandpower_windows_{}-{}.npy")              # noqa: E501
 
-    Cl_data_file_template = ("../results/measurements_incl_m/shear_KiDS1000_shear_KiDS1000/"           # noqa: E501
+    Cl_data_file_template = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"           # noqa: E501
                              "data/Cl_gal_{}-{}.npz")
 
-    Cl_cov_file_template = ("../results/measurements_incl_m/shear_KiDS1000_shear_KiDS1000/"            # noqa: E501
-                            "cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz")
+    Cl_cov_file_template = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"            # noqa: E501
+                            "cov_Cls/Cl_cov_3x2pt_MAP_{}-{}.npz")
 
     catalog_files = ["../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.1-0.3_galactic.npz",     # noqa: E501
                      "../data/shear_catalogs_KiDS1000/KiDS-1000_All_z0.3-0.5_galactic.npz",     # noqa: E501
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     m_bias_old = [-0.009, -0.011, -0.015, 0.002, 0.007]
     m_bias_new = [-0.010, -0.009, -0.011, 0.008, 0.012]
-    m_bias = m_bias_new
+    m_bias = m_bias_old
 
     theory_prediction_root_path = "../runs/theory_prediction_runs/cov_theory_predictions_run1_hmx_nz128_beam10"
     nofz_files = [os.path.join(theory_prediction_root_path, "data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO1_Nz.asc"),  # noqa: E501
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     raw_Cl_file_template = os.path.join(theory_prediction_root_path, "output/data_block/shear_cl/bin_{}_{}.txt")  # noqa: E501
 
-    os.environ["OMP_NUM_THREADS"] = "40"
+    os.environ["OMP_NUM_THREADS"] = "20"
 
     field_idx_EE = [(i, j) for i in range(len(catalog_files))
                     for j in range(i+1)]
@@ -90,8 +90,8 @@ if __name__ == "__main__":
         Cl_data_file = Cl_data_file_template.format(*idx)
         cmd += ["--Cl-data-filename", Cl_data_file]
 
-        # bandpower_window_file = bandpower_window_file_template.format(*idx)
-        # cmd += ["--bandpower-windows-filename", bandpower_window_file]
+        bandpower_window_file = bandpower_window_file_template.format(*idx)
+        cmd += ["--bandpower-windows-filename", bandpower_window_file]
 
         if galactic_coordinates:
             cmd += ["--no-flip-e1"]

@@ -13,10 +13,10 @@ if __name__ == "__main__":
 
     # key = "mmmm"
     # tag = "exact_noise_mixed_terms"
-    # key = "nnnn"
-    # tag = "exact_noise"
-    key = "aaaa"
-    tag = "nka"
+    key = "nnnn"
+    tag = "exact_noise"
+    # key = "aaaa"
+    # tag = "nka"
     # key = "ssss"
     # tag = "nka_sva"
     # key = "nnnn"
@@ -36,12 +36,12 @@ if __name__ == "__main__":
         covariance_file_template = ("cov_shear_{}_shear_{}_"
                                     "shear_{}_shear_{}.npz")
 
-    base_path = "../results/measurements_incl_m/shear_KiDS1000_shear_KiDS1000/"
+    base_path = "../results/measurements/shear_KiDS1000_shear_KiDS1000/"
 
     data_Cl_path = os.path.join(base_path, "data/")
 
-    Cl_file = {"EE": os.path.join(base_path, "likelihood/data/Cl_EE_shear_KiDS1000_gal_new_m.txt"),
-               "BB": os.path.join(base_path, "likelihood/data/Cl_BB_shear_KiDS1000_gal_new_m.txt")}
+    Cl_file = {"EE": os.path.join(base_path, "likelihood/data/Cl_EE_shear_KiDS1000_gal.txt"),
+               "BB": os.path.join(base_path, "likelihood/data/Cl_BB_shear_KiDS1000_gal.txt")}
 
     covariance_file = {"EEEE": os.path.join(base_path, f"likelihood/cov/covariance_gaussian_{tag}_EEEE.txt"),
                        "BBBB": os.path.join(base_path, f"likelihood/cov/covariance_gaussian_{tag}_BBBB.txt")}

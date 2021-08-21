@@ -206,6 +206,9 @@ class tSZPipelineFactory(cosmosis_utils.CosmoSISPipelineFactory):
 
 def EE_only_config_update(EE_cov_file):
     config_update = {"hmx":               {"fields": "matter"},
+                     "extrapolate_power": {"sections": None},
+                     "linear_alignment" : {"X_matter_power_section" : None,
+                                           "X_intrinsic_power_output_section" : None,},
                      "projection":        {"shear-y" : None,
                                            "intrinsic-y" : None},
                      "cib_contamination": None,

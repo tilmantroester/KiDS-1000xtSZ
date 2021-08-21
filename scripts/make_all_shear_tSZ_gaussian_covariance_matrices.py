@@ -30,17 +30,27 @@ if __name__ == "__main__":
     #                 "shear-foreground", "../results/measurements/shear_KiDS1000_y_milca/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",        # noqa: E501
     #                 "foreground-foreground", "../results/measurements/y_ziang_nocib_y_ziang_nocib/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
     # output_path = "../results/measurements/shear_KiDS1000_y_ziang_nocib/cov_3x2pt_MAP/nka/"
+    # Ziang's map, beta=1.2
+    # Cl_cov_files = ["shear-shear", "../results/measurements_incl_m/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",  # noqa: E501
+    #                 "shear-foreground", "../results/measurements_incl_m/shear_KiDS1000_y_yan2019_nocib_beta1.2/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",        # noqa: E501
+    #                 "foreground-foreground", "../results/measurements_incl_m/y_yan2019_nocib_beta1.2_y_yan2019_nocib_beta1.2/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
+    # output_path = "../results/measurements_incl_m/shear_KiDS1000_y_yan2019_nocib_beta1.2/cov_3x2pt_MAP/nka/"
 
     # ACT BN
-    Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",   # noqa: E501
-                    "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",       # noqa: E501
-                    "foreground-foreground", "../results/measurements/y_ACT_BN_y_ACT_BN/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
-    output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_3x2pt_MAP/nka/"
+    # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",   # noqa: E501
+    #                 "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",       # noqa: E501
+    #                 "foreground-foreground", "../results/measurements/y_ACT_BN_y_ACT_BN/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
+    # output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_3x2pt_MAP/nka/"
     # ACT BN nocib
     # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",   # noqa: E501
     #                 "shear-foreground", "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",       # noqa: E501
     #                 "foreground-foreground", "../results/measurements/y_ACT_BN_nocib_y_ACT_BN_nocib/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
     # output_path = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/cov_3x2pt_MAP/nka/"
+    # ACT BN nocmb
+    Cl_cov_files = ["shear-shear", "../results/measurements_incl_m/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_3x2pt_MAP_gal_{}-{}.npz",   # noqa: E501
+                    "shear-foreground", "../results/measurements_incl_m/shear_KiDS1000_cel_y_ACT_BN_nocmb/cov_Cls/Cl_cov_3x2pt_MAP_cel_{}-{}.npz",       # noqa: E501
+                    "foreground-foreground", "../results/measurements_incl_m/y_ACT_BN_nocmb_y_ACT_BN_nocmb/cov_Cls/Cl_cov_smoothed_{}-{}.npz"]  # noqa: E501
+    output_path = "../results/measurements_incl_m/shear_KiDS1000_cel_y_ACT_BN_nocmb/cov_3x2pt_MAP/nka/"
 
     # Planck 100 GHz HFI, zero cross-correlation
     # Cl_cov_files = ["shear-shear", "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_Cls/Cl_cov_CCL_gal_{}-{}.npz",           # noqa: E501

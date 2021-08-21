@@ -38,6 +38,7 @@ def setup(options):
         CIB_model.train(progress_bar=False)
 
     CIB_model.print_model_parameters()
+    print(f"CIB model chi2 {CIB_model.chi2():.1f}")
 
     CIB_section = options.get_string(option_section, "CIB_section",
                                      default="shear_CIB_cl")

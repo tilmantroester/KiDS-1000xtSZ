@@ -19,22 +19,23 @@ if __name__ == "__main__":
     nz_files = [f"%(NZ_DATA_PATH)s/SOM_N_of_Z/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO{i}_Nz.asc" for i in range(1,6)]
     nz_cov_file = "%(NZ_DATA_PATH)s/SOM_cov_multiplied.asc"
 
-    XCORR_DATA_PATH = "%(TRIAD_PATH)s/results/measurements_incl_m/"
-    XCORR_OLD_DATA_PATH = "%(TRIAD_PATH)s/results/measurements/"
+    XCORR_DATA_PATH = "%(TRIAD_PATH)s/results/measurements/"
+    XCORR_NO_M_DATA_PATH = "%(TRIAD_PATH)s/results/measurements_no_m/"
+
 
     cov_EE_file = "%(XCORR_DATA_PATH)s/shear_KiDS1000_shear_KiDS1000/likelihood/cov/covariance_total_SSC_mask_EEEE.txt"
-    shear_shear_data_file = "%(XCORR_DATA_PATH)s/shear_KiDS1000_shear_KiDS1000/likelihood/data/Cl_EE_shear_KiDS1000_gal_new_m.txt"
+    shear_shear_data_file = "%(XCORR_DATA_PATH)s/shear_KiDS1000_shear_KiDS1000/likelihood/data/Cl_EE_shear_KiDS1000_gal.txt"
 
     cov_TE_file_template = "%(XCORR_DATA_PATH)s/shear_KiDS1000_{}/likelihood/cov/covariance_total_SSC_mask_TETE.txt"
     cov_joint_file_template = "%(XCORR_DATA_PATH)s/shear_KiDS1000_{}/likelihood/cov/covariance_total_SSC_mask_joint.txt"
-    shear_y_data_file_template = "%(XCORR_DATA_PATH)s/shear_KiDS1000_{}/likelihood/data/Cl_TE_shear_KiDS1000_{}_new_m_{}.txt"
+    shear_y_data_file_template = "%(XCORR_DATA_PATH)s/shear_KiDS1000_{}/likelihood/data/Cl_TE_shear_KiDS1000_{}_{}.txt"
 
     shear_y_bandpower_window_file_template = "%(SHEAR_Y_WINDOW_FUNCTION_DIR)s/pymaster_bandpower_windows_{}-{}.npy"
     shear_shear_bandpower_window_file_template = "%(SHEAR_SHEAR_WINDOW_FUNCTION_DIR)s/pymaster_bandpower_windows_{}-{}.npy"
 
-    CIB_data_file = "%(XCORR_OLD_DATA_PATH)s/shear_KiDS1000_545GHz_CIB/likelihood/data/Cl_TE_shear_KiDS1000_gal_545GHz_CIB.txt"
-    CIB_cov_file = "%(XCORR_OLD_DATA_PATH)s/shear_KiDS1000_545GHz_CIB/likelihood/cov/covariance_gaussian_nka_TETE.txt"
-    CIB_GP_state_file = "%(XCORR_OLD_DATA_PATH)s/shear_KiDS1000_545GHz_CIB/GP_model/GP_state.torchstate"
+    CIB_data_file = "%(XCORR_NO_M_DATA_PATH)s/shear_KiDS1000_545GHz_CIB/likelihood/data/Cl_TE_shear_KiDS1000_gal_545GHz_CIB.txt"
+    CIB_cov_file = "%(XCORR_NO_M_DATA_PATH)s/shear_KiDS1000_545GHz_CIB/likelihood/cov/covariance_gaussian_nka_TETE.txt"
+    CIB_GP_state_file = "%(XCORR_NO_M_DATA_PATH)s/shear_KiDS1000_545GHz_CIB/GP_model/GP_state.torchstate"
 
     PATHS = {"CSL_PATH" : CSL_PATH, 
              "KCAP_PATH" : KCAP_PATH, 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
 
     DATA_DIRS = {"NZ_DATA_PATH" : NZ_DATA_PATH,
                  "XCORR_DATA_PATH" : XCORR_DATA_PATH,
-                 "XCORR_OLD_DATA_PATH" : XCORR_OLD_DATA_PATH}
+                 "XCORR_NO_M_DATA_PATH": XCORR_NO_M_DATA_PATH}
 
     config = pipeline_factory.tSZPipelineFactory(options=dict(source_nz_files=nz_files, 
                                 dz_covariance_file=nz_cov_file, 
@@ -102,6 +103,21 @@ if __name__ == "__main__":
         params_update = {"cib_parameters": {"alpha": 0.0}}
 
         config_updates[map_name + "_nocib_marg"] = (config_update, params_update)
+    
+    # No y IA
+    # TE
+    cov_file = cov_TE_file_template.format("y_milca")
+    config_update = pipeline_factory.TE_only_config_update(cov_file)
+    config_update["like"].update({"shear_y_ia_section_name": None})
+    config_updates["TE_no_y_IA"] = config_update
+
+    # TE
+    config_update = {"like": {"shear_y_ia_section_name": None}}
+    config_updates["joint_no_y_IA"] = config_update
+
+    # No TETE SSC
+    cov_file = "%(XCORR_DATA_PATH)s/shear_KiDS1000_y_milca/likelihood/cov/covariance_total_no_SSC_TETE.txt"
+    config_updates["TE_no_SSC"] = pipeline_factory.TE_only_config_update(cov_file)
 
 
     for config_name, config_update in config_updates.items():
@@ -126,7 +142,7 @@ if __name__ == "__main__":
 
         root_dir = output_root_dir
         config.stage_files(root_dir=os.path.join(root_dir, run_name), 
-                            defaults={"RUN_NAME": run_name, 
-                                        "ROOT_DIR": os.path.join(root_dir, "%(RUN_NAME)s/"),
-                                        **PATHS},
-                            data_file_dirs=DATA_DIRS, copy_data_files=True)
+                           defaults={"RUN_NAME": run_name, 
+                                     "ROOT_DIR": os.path.join(root_dir, "%(RUN_NAME)s/"),
+                                     **PATHS},
+                           data_file_dirs=DATA_DIRS, copy_data_files=True)

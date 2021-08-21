@@ -15,42 +15,51 @@ if __name__ == "__main__":
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_milca/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_nilc/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_y_yan2019_nocib/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_y_yan2019_nocib_beta1.2/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN/"
     # base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/"
-
+    base_path_TE = "../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocmb/"
 
     # base_path_TE = "../results/measurements/shear_KiDS1000_545GHz_CIB/"
-    base_path_TE = "../results/measurements/shear_KiDS1000_100GHz_HFI/"
+    # base_path_TE = "../results/measurements/shear_KiDS1000_100GHz_HFI/"
 
-    Cl_suffix = "gal"
+    Cl_suffix = "cel"
 
-    field_description = {"E": "KiDS-1000, galactic coordinates",
+    field_description = {#"E": "KiDS-1000, galactic coordinates",
+                        #  "E": "KiDS-1000, celestial coordinates, new m-bias",
+                        #  "E": "KiDS-1000, galactic coordinates, old m-bias",
                         #  "T": "Planck Compton-y MILCA"
                         #  "T": "Planck Compton-y NILC",
                         #  "T": "Planck Compton-y Yan et al. 2019, CIB subtracted"
+                        #  "T": "Planck Compton-y Yan et al. 2019, CIB subtracted, beta=1.2"
 
-                        #  "E": "KiDS-1000, celestial coordinates",
+                         "E": "KiDS-1000, celestial coordinates",
                         #  "T": "ACT BN Compton-y"
                         #  "T": "ACT BN Compton-y, CIB deprojected"
+                         "T": "ACT BN Compton-y, CMB deprojected"
 
                         #  "T": "Planck 545 GHz CIB"
-                        "T": "Planck 100 GHz HFI"
+                        #  "T": "Planck 100 GHz HFI"
                          }
-    field_tag = {"E": "shear_KiDS1000_gal",
+    field_tag = {#"E": "shear_KiDS1000_gal",
+                #  "E": "shear_KiDS1000_cel_new_m",
+                #  "E": "shear_KiDS1000_gal_old_m",
                 #  "T": "y_milca",
                 #  "T": "y_nilc",
                 #  "T": "y_yan2019_nocib"
+                #  "T": "y_yan2019_nocib_beta1.2"
 
-                #  "E": "shear_KiDS1000_cel",
+                 "E": "shear_KiDS1000_cel",
                 #  "T": "ACT_BN"
                 #  "T": "ACT_BN_nocib"
+                 "T": "ACT_BN_nocmb"
 
                 # "T": "545GHz_CIB"
-                "T": "100GHz_HFI"
+                # "T": "100GHz_HFI"
                  }
 
-    probes = ["TE", "TB"]
-    cov_blocks = ["TETE",]
+    probes = ["TE", "TB",]
+    cov_blocks = ["TETE", "TBTB", "joint"]
 
     tag_EE = field_tag["E"]
     tag_TE = field_tag["E"] + "_" + field_tag["T"]
@@ -160,7 +169,7 @@ if __name__ == "__main__":
                     "TBTB": np.zeros((n_TE, n_TE)),
                     "EETE": np.zeros((n_EE, n_TE)),
                     "BBTB": np.zeros((n_EE, n_TE))}
-    if "EEEE" in cov_blocks:
+    if "EEEE" in cov_blocks or "joint" in cov_blocks:
         # EEEE/BBBB
         for i, (idx_a1, idx_a2) in enumerate(field_idx_EE):
             for j, (idx_b1, idx_b2) in enumerate(field_idx_EE[:i+1]):
@@ -184,7 +193,7 @@ if __name__ == "__main__":
                 c = np.load(os.path.join(
                             covariance_paths["TETE"],
                             f"cov_shear_{idx_a1}_foreground_{idx_a2}_"
-                            f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["ssss"]
+                            f"shear_{idx_b1}_foreground_{idx_b2}.npz"))["aaaa"]
                 c = c.reshape(n_ell_bin_TE, 2, n_ell_bin_TE, 2)
 
                 cov_gaussian["TETE"][i*n_ell_bin_TE: (i+1)*n_ell_bin_TE,
