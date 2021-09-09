@@ -10,7 +10,7 @@ KCAP_PATH = "/home/ttroester/Research/KiDS/kcap/"
 # KCAP_PATH = "/Users/yooken/Research/KiDS/kcap/"
 
 import sys
-sys.path.append("../tools/")
+sys.path.append("tools/")
 import pipeline_factory
 
 sys.path.append(os.path.join(KCAP_PATH, "utils"))
@@ -75,6 +75,9 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir")
     parser.add_argument("--n-ppd")
     parser.add_argument("--n-MAP-start-points")
+
+    parser.add_argument("--EE-chain", action="store_true")
+    parser.add_argument("--TE-chain", action="store_true")
 
     args = parser.parse_args()
 
@@ -166,16 +169,33 @@ if __name__ == "__main__":
 
         logpost_sort_idx = np.argsort(param_dict["logpost"])[::-1]
         max_logpost_idx = logpost_sort_idx[0]
+
+        chain_specifig_params_update = None
+        params = None
+        config_update = {}
+        if args.EE_chain:
+            cov_file = cov_EE_file
+            config_update = pipeline_factory.EE_only_config_update(cov_file)
+            chain_specifig_params_update = {"cib_parameters": {"alpha": 0.0}}
+            params = {"alpha_cib": 0.0}
+        if args.TE_chain:
+            cov_file = cov_TE_file
+            config_update = pipeline_factory.TE_only_config_update(cov_file)
             
         start_points = []
         for i, idx in enumerate(logpost_sort_idx[:n_start_point]):
             p = {n: param_dict[n][idx] for n in param_dict.keys()}
+            if params is not None:
+                p.update(params)
             params_update = config.create_base_params(p)
+            if chain_specifig_params_update is not None:
+                params_update.update(chain_specifig_params_update)
             config.reset_config()
+            config.update_config(config_update)
             config.update_params(params_update)
 
             print(f"Logpost for idx {i}:", p["logpost"])
-            if False: # i == 0:
+            if False: #i == 0:
                 print("Checking logpost from new config")
                 block = config.run_pipeline(defaults={**PATHS, **DATA_DIRS})
                 loglike_input = p["loglike"]

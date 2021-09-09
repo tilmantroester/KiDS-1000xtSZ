@@ -61,7 +61,7 @@ if __name__ == "__main__":
                                 CIB_data_file=CIB_data_file,
                                 CIB_GP_state_file=CIB_GP_state_file))
 
-    output_root_dir = "runs/final_runs_fast/"
+    output_root_dir = "runs/final_runs/"
 
     config_updates = {}
     # Fiducial
@@ -78,46 +78,46 @@ if __name__ == "__main__":
     # Joint
     config_updates["joint_fid"] = {}
 
-    # Different y-maps
-    # Planck
-    # TE only, nocib marginalisation
-    for map_name in ["y_milca", "y_nilc", "y_yan2019_nocib", "y_yan2019_nocib_beta1.2"]:
-        cov_file = cov_TE_file_template.format(map_name)
-        data_file = shear_y_data_file_template.format(map_name, "gal", map_name)
+    # # Different y-maps
+    # # Planck
+    # # TE only, nocib marginalisation
+    # for map_name in ["y_milca", "y_nilc", "y_yan2019_nocib", "y_yan2019_nocib_beta1.2"]:
+    #     cov_file = cov_TE_file_template.format(map_name)
+    #     data_file = shear_y_data_file_template.format(map_name, "gal", map_name)
 
-        config_update = pipeline_factory.TE_only_config_update(cov_file)
-        config_update["like"].update({"shear_y_data_file": data_file})
-        params_update = {"cib_parameters": {"alpha": 0.0}}
+    #     config_update = pipeline_factory.TE_only_config_update(cov_file)
+    #     config_update["like"].update({"shear_y_data_file": data_file})
+    #     params_update = {"cib_parameters": {"alpha": 0.0}}
 
-        config_updates[map_name + "_nocib_marg"] = (config_update, params_update)
+    #     config_updates[map_name + "_nocib_marg"] = (config_update, params_update)
 
-    # ACT
-    # TE only, nocib marginalisation
-    for map_name in ["y_ACT_BN", "y_ACT_BN_nocmb", "y_ACT_BN_nocib"]:
-        cov_file = cov_TE_file_template.format("cel_" + map_name)
-        data_file = shear_y_data_file_template.format("cel_" + map_name, "cel", map_name[2:])
+    # # ACT
+    # # TE only, nocib marginalisation
+    # for map_name in ["y_ACT_BN", "y_ACT_BN_nocmb", "y_ACT_BN_nocib"]:
+    #     cov_file = cov_TE_file_template.format("cel_" + map_name)
+    #     data_file = shear_y_data_file_template.format("cel_" + map_name, "cel", map_name[2:])
 
-        config_update = pipeline_factory.TE_only_config_update(cov_file)
-        config_update["like"].update({"shear_y_data_file": data_file})
-        config_update["beam_filter_cls"] = {"fwhm": 1.6}
-        params_update = {"cib_parameters": {"alpha": 0.0}}
+    #     config_update = pipeline_factory.TE_only_config_update(cov_file)
+    #     config_update["like"].update({"shear_y_data_file": data_file})
+    #     config_update["beam_filter_cls"] = {"fwhm": 1.6}
+    #     params_update = {"cib_parameters": {"alpha": 0.0}}
 
-        config_updates[map_name + "_nocib_marg"] = (config_update, params_update)
+    #     config_updates[map_name + "_nocib_marg"] = (config_update, params_update)
     
-    # No y IA
-    # TE
-    cov_file = cov_TE_file_template.format("y_milca")
-    config_update = pipeline_factory.TE_only_config_update(cov_file)
-    config_update["like"].update({"shear_y_ia_section_name": None})
-    config_updates["TE_no_y_IA"] = config_update
+    # # No y IA
+    # # TE
+    # cov_file = cov_TE_file_template.format("y_milca")
+    # config_update = pipeline_factory.TE_only_config_update(cov_file)
+    # config_update["like"].update({"shear_y_ia_section_name": None})
+    # config_updates["TE_no_y_IA"] = config_update
 
-    # TE
-    config_update = {"like": {"shear_y_ia_section_name": None}}
-    config_updates["joint_no_y_IA"] = config_update
+    # # TE
+    # config_update = {"like": {"shear_y_ia_section_name": None}}
+    # config_updates["joint_no_y_IA"] = config_update
 
-    # No TETE SSC
-    cov_file = "%(XCORR_DATA_PATH)s/shear_KiDS1000_y_milca/likelihood/cov/covariance_total_no_SSC_TETE.txt"
-    config_updates["TE_no_SSC"] = pipeline_factory.TE_only_config_update(cov_file)
+    # # No TETE SSC
+    # cov_file = "%(XCORR_DATA_PATH)s/shear_KiDS1000_y_milca/likelihood/cov/covariance_total_no_SSC_TETE.txt"
+    # config_updates["TE_no_SSC"] = pipeline_factory.TE_only_config_update(cov_file)
 
 
     for config_name, config_update in config_updates.items():
@@ -138,6 +138,9 @@ if __name__ == "__main__":
                                    sampling_options=dict(verbose=True,
                                    debug=False,
                                    sampler_name=sampler,
+                                   live_points=500,
+                                   multinest_efficiency=0.3,
+                                   nested_sampling_tolerance=1e-2,
                                    run_name=run_name))
 
         root_dir = output_root_dir
