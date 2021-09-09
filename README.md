@@ -1,71 +1,16 @@
-# Make cosmic shear measurements
+# Joint analysis of shear-tSZ cross-correlations and cosmic shear with KiDS-1000, Planck, an dACT
 
-## Create catalogs and catalog statistics
-```
-python compute_KiDS_stats.py
-```
-Creates separate catalogs for north, south, and the combined patches, in both celestial and galactic coordinates.
-The celestial catalogs need e1 flipped when used as a map.
+This repository contains the scripts, utilities, data vectors, and covariances used in the paper [Joint constraints on cosmology and the impact of baryon feedback: combining KiDS-1000 lensing with the thermal Sunyaev-Zeldovich effect from Planck and ACT](). 
 
-## Create ell bins:
-```
-python create_binning_operator.py
-```
+The main dependencies are
+- [NaMaster](https://github.com/LSSTDESC/NaMaster), for the estimation of the pseudo-Cls and Gaussian covariances,
+- [pyhmcode](https://github.com/tilmantroester/pyhmcode), for the non-linear power spectra models and halo profiles,
+- [CCL](https://github.com/LSSTDESC/CCL), for the non-Gaussian covariance contributions,
+- [kcap](https://github.com/KiDS-WL/kcap), for the inference pipeline.
 
-## Compute mode-mixing matrices and measure Cls
-```
-python make_all_shear_shear_measurements.py
-```
-
-## Compute covariance mode-mixing matrices
-```
-./shear_covariance_mcm_namaster.sh
-```
-
-## Compute Gaussian covariance matrices
-```
-python make_all_shear_gaussian_covariance_matrices.py
-```
-
-## Assemble data and covariances into single files for likelihood
-```
-python assemble_data_and_covariance_files.py
-```
-
-# Make cross-correlation and joint analysis measurements
-
-## Compute mode-mixing matrices and measure Cls
-```
-python make_all_shear_tSZ_measurements.py
-```
-
-## Compute covariance mode-mixing matrices
-Run for both TETE and EETE if joint analysis with cosmic shear is required.
-```
-./namaster_covariance_mcm.sh
-```
-
-## Compute auto-spectrum of foreground map for covariance
-```
-python compute_foreground_cov_Cls.py
-```
-
-## Compute Gaussian covariance matrices
-```
-python make_all_shear_tSZ_gaussian_covariance_matrices.py
-```
-
-## Assemble data and covariances into single files for likelihood
-```
-python assemble_joint_data_and_covariance_files.py
-```
-
-## Compute CIB-shear cross-correlation and covariance
-```
-python reduce_CIB_data.py
-```
-
-## Add up covariance contributions
-```
-python add_up_covariance_terms.py
-```
+## Repository structure
+- `data/`: Contains catalogue statistics and data products with multiple applications (e.g., speficiation of the ell-binning).
+- `notebooks/`: Collection of Jupyter notebooks used in data reduction and exploration.
+- `results/`: Data vectors and covariances used in the analysis.
+- `scripts/`: Collection of scripts used in the data reduction. The measurement "pipeline" is described in [`scripts/README.md`](scripts/README.md).
+- `tools/`: Collection of tools used in the analysis. The distinction between `scripts` and `tools` is somewhat arbitrary.
