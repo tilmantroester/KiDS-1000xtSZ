@@ -114,14 +114,11 @@ if __name__ == "__main__":
                              pixel_idx=pixel_idx)
 
             if patch == "N":
-                area_file = "/home/cech/KiDSLenS/THELI_catalogues/KIDS_conf/"\
-                            "EFFECTIVE_AREA_NEFF/K1000_N_eff_area.txt"
+                area_file = "../data/shear_stats/K1000_N_eff_area.txt"
             elif patch == "S":
-                area_file = "/home/cech/KiDSLenS/THELI_catalogues/KIDS_conf/"\
-                            "EFFECTIVE_AREA_NEFF/K1000_S_eff_area.txt"
+                area_file = "../data/shear_stats/K1000_S_eff_area.txt"
             else:
-                area_file = "/home/cech/KiDSLenS/THELI_catalogues/KIDS_conf/"\
-                            "EFFECTIVE_AREA_NEFF/K1000_eff_area.txt"
+                area_file = "../data/shear_stats/K1000_eff_area.txt"
 
             A = np.loadtxt(area_file,
                            converters={0: lambda s: 0.0})[:, -1].sum()
