@@ -1,10 +1,9 @@
 import os
 
 import numpy as np
+import astropy.io.fits as fits
 
 import healpy
-
-import pylenspice.pylenspice as pylenspice
 
 import sys
 sys.path.append("../tools/")
@@ -22,6 +21,116 @@ def transform_cel_to_gal(ra, dec, e1, e2):
     e2_gal = e*np.sin(2*(phi+alpha))
 
     return l, b, e1_gal, e2_gal
+
+
+def prepare_catalog(catalog_filename,
+                    column_names={"x": "x", "y": "y",
+                                  "e1": "e1", "e2": "e2",
+                                  "w": "w", "m": "m",
+                                  "c1": "c1", "c2": "c2"},
+                    c_correction="data", m_correction="catalog",
+                    z_min=None, z_max=None,
+                    selections=[("weight", "gt", 0.0)],
+                    hdu_idx=1, verbose=False):
+    """Prepare lensing catalogues.
+
+    Arguments:
+        catalog_filename (str): File name of shape catalog.
+        column_names (dict, optional): Dictionary of column names. Required
+            entries are "x", "y", "e1", "e2", "w". If c_correction="catalog",
+            "c1", "c2" are required. If m_correction="catalog", "m" is
+            required. (default ``{"x":"x", "y":"y", "e1":"e1", "e2":"e2",
+            "w":"w", "m":"m", "c1":"c1", "c2":"c2"}``).
+        c_correction (str, optional): Apply c correction. Options are "catalog"
+            and "data". (default: "data").
+        m_correction (str, optional): Apply m correction. Options are "catalog"
+            or ``None``. (default: "catalog").
+        z_min (float, optional): Lower bound for redshift cut (default: None).
+        z_max (float, optional): Upper bound for redshift cut (default: None).
+        selections (list, optional): List of catalog selection criteria. The
+            list entries consist of tuples with three elements: column name,
+            operator, and value. The supported operators are "eq", "neq", "gt",
+            "ge", "lt", "le". (default ``[("weight", "gt", 0.0)]``).
+        hdu_idx (int, optional): Index of the FITS file HDU to use.
+            (default 1).
+        verbose (bool, optional): Verbose output (default False).
+
+    Returns:
+        (tuple): Tuple containing:
+            (numpy.array): RA
+            (numpy.array): Dec
+            (numpy.array): e1
+            (numpy.array): e2
+            (numpy.array): w
+            (numpy.array): m
+    """
+    hdu = fits.open(catalog_filename)
+
+    mask = np.ones(hdu[hdu_idx].data.size, dtype=bool)
+    # Apply selections to catalog
+    for col, op, val in selections:
+        if verbose:
+            print("Applying {} {} on {}.".format(op, val, col))
+        if op == "eq":
+            mask = np.logical_and(mask, hdu[hdu_idx].data[col] == val)
+        elif op == "neq":
+            mask = np.logical_and(mask, hdu[hdu_idx].data[col] != val)
+        elif op == "gt":
+            mask = np.logical_and(mask, hdu[hdu_idx].data[col] > val)
+        elif op == "ge":
+            mask = np.logical_and(mask, hdu[hdu_idx].data[col] >= val)
+        elif op == "lt":
+            mask = np.logical_and(mask, hdu[hdu_idx].data[col] < val)
+        elif op == "le":
+            mask = np.logical_and(mask, hdu[hdu_idx].data[col] <= val)
+        else:
+            raise ValueError("Operator {} not supported.".format(op))
+
+    # For convenience, redshfit cuts can be applied through the arguments
+    # z_min and z_max as well.
+    if z_min is not None and z_max is not None:
+        if verbose:
+            print("Applying z cut: {}-{}.".format(z_min, z_max))
+        z = hdu[hdu_idx].data[column_names["z"]]
+        mask = np.logical_and(mask, np.logical_and(z > z_min, z <= z_max))
+
+    ra = hdu[hdu_idx].data[column_names["x"]][mask]
+    dec = hdu[hdu_idx].data[column_names["y"]][mask]
+    w = hdu[hdu_idx].data[column_names["w"]][mask]
+    e1 = hdu[hdu_idx].data[column_names["e1"]][mask]
+    e2 = hdu[hdu_idx].data[column_names["e2"]][mask]
+
+    # Apply c correction
+    if c_correction == "catalog":
+        # Use c correction supplied by the catalog
+        if verbose:
+            print("Applying c correction provided by the catalog.")
+        c1 = hdu[hdu_idx].data[column_names["c1"]][mask]
+        c2 = hdu[hdu_idx].data[column_names["c2"]][mask]
+        c1_mask = c1 > -99
+        c2_mask = c2 > -99
+        e1[c1_mask] -= c1[c1_mask]
+        e2[c2_mask] -= c2[c2_mask]
+    elif c_correction == "data":
+        # Calculate c correction from the weighted ellipticity average
+        if verbose:
+            print("Applying c correction calculated from the data.")
+        c1 = np.sum(w*e1)/np.sum(w)
+        c2 = np.sum(w*e2)/np.sum(w)
+        e1 -= c1
+        e2 -= c2
+
+    # Apply m correction
+    if m_correction == "catalog":
+        if verbose:
+            print("Applying m correction provided by the catalog.")
+        m = hdu[hdu_idx].data[column_names["m"]][mask]
+    else:
+        m = np.zeros_like(w)
+
+    hdu.close()
+
+    return ra, dec, e1, e2, w, m
 
 
 if __name__ == "__main__":
@@ -77,7 +186,7 @@ if __name__ == "__main__":
             sigma_e_sq = {}
 
             for z_cut in Z_CUTS:
-                ra, dec, e1, e2, w, m = pylenspice.prepare_catalog(
+                ra, dec, e1, e2, w, m = prepare_catalog(
                                             catalog_filename=catalog,
                                             column_names=KiDS_column_names,
                                             c_correction="data",
@@ -105,7 +214,7 @@ if __name__ == "__main__":
                         np.savez(filename,
                                  l=l, b=b, w=w, e1=e1_gal, e2=e2_gal,
                                  pixel_idx=pixel_idx_gal)
-                    
+
                     pixel_idx = healpy.ang2pix(nside,
                                                ra, dec, lonlat=True)
                     filename = os.path.join(compressed_catalog_path,
