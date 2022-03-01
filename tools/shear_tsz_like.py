@@ -32,6 +32,9 @@ def create_data_vector_mask(ell, indices, options, prefix, tag_template):
             keep_ell = options[option_section, tag]
             if keep_ell == "none":
                 mask = np.zeros_like(ell, dtype=bool)
+            elif isinstance(keep_ell, str) and keep_ell.startswith("mask"):
+                mask = keep_ell.split(" ")[1:]
+                mask = np.array([m == "1" for m in mask])
             else:
                 mask = (ell >= keep_ell[0]) & (ell <= keep_ell[1])
             mask = mask & global_mask
