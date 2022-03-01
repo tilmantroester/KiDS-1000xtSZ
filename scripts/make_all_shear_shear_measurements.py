@@ -37,10 +37,10 @@ if __name__ == "__main__":
     m_bias_new = [-0.010, -0.009, -0.011, 0.008, 0.012]
     m_bias = m_bias_old
 
-    theory_prediction_root_path = "../runs/theory_prediction_runs/cov_theory_predictions_run1_hmx_nz128_beam10"
+    theory_prediction_root_path = "../runs/theory_prediction_runs/cov_theory_predictions_run1_hmx_nz128_beam10"  # noqa: E501
     nofz_files = [os.path.join(theory_prediction_root_path, "data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO1_Nz.asc"),  # noqa: E501
-                  os.path.join(theory_prediction_root_path, "/data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO2_Nz.asc"),  # noqa: E501
-                  os.path.join(theory_prediction_root_path, "/data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO3_Nz.asc"),  # noqa: E501
+                  os.path.join(theory_prediction_root_path, "data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO2_Nz.asc"),  # noqa: E501
+                  os.path.join(theory_prediction_root_path, "data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO3_Nz.asc"),  # noqa: E501
                   os.path.join(theory_prediction_root_path, "data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO4_Nz.asc"),  # noqa: E501
                   os.path.join(theory_prediction_root_path, "data/load_source_nz/K1000_NS_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_DIRcols_Fid_blindC_TOMO5_Nz.asc")]  # noqa: E501
 
@@ -61,7 +61,8 @@ if __name__ == "__main__":
         cmd = ["python", "namaster_cosmic_shear_measurements.py"]
         cmd += ["--bin-operator", bin_operator_file]
 
-        cmd += ["--Cl-signal-files", raw_Cl_file_template.format(idx[0]+1, idx[1]+1)]
+        cmd += ["--Cl-signal-files",
+                raw_Cl_file_template.format(idx[0]+1, idx[1]+1)]
         cmd += ["--Cl-signal-ell-file", raw_ell_file]
 
         # cmd += ["--nofz-files", nofz_files[idx[0]]]
