@@ -61,22 +61,22 @@ if __name__ == "__main__":
                                 CIB_data_file=CIB_data_file,
                                 CIB_GP_state_file=CIB_GP_state_file))
 
-    output_root_dir = "runs/final_runs/"
+    output_root_dir = "runs/final_runs_fast/"
 
     config_updates = {}
-    # Fiducial
-    # EE
-    cov_file = cov_EE_file
-    config_update = pipeline_factory.EE_only_config_update(cov_file)
-    params_update = {"cib_parameters": {"alpha": 0.0}}
-    config_updates["EE_fid"] = (config_update, params_update)
+    # # Fiducial
+    # # EE
+    # cov_file = cov_EE_file
+    # config_update = pipeline_factory.EE_only_config_update(cov_file)
+    # params_update = {"cib_parameters": {"alpha": 0.0}}
+    # config_updates["EE_fid"] = (config_update, params_update)
 
-    # TE
-    cov_file = cov_TE_file_template.format("y_milca")
-    config_updates["TE_fid"] = pipeline_factory.TE_only_config_update(cov_file)
+    # # TE
+    # cov_file = cov_TE_file_template.format("y_milca")
+    # config_updates["TE_fid"] = pipeline_factory.TE_only_config_update(cov_file)
 
-    # Joint
-    config_updates["joint_fid"] = {}
+    # # Joint
+    # config_updates["joint_fid"] = {}
 
     # # Different y-maps
     # # Planck
@@ -119,6 +119,33 @@ if __name__ == "__main__":
     # cov_file = "%(XCORR_DATA_PATH)s/shear_KiDS1000_y_milca/likelihood/cov/covariance_total_no_SSC_TETE.txt"
     # config_updates["TE_no_SSC"] = pipeline_factory.TE_only_config_update(cov_file)
 
+    # HMx calibration
+    # # TE matter
+    # cov_file = cov_TE_file_template.format("y_milca")
+    # config_update = pipeline_factory.TE_only_config_update(cov_file)
+    # config_update["hmx"] = {"mode": "HMx2020_matter"}
+    # config_updates["TE_HMx_matter_calib"] = config_update
+    # TE matter+cdm+gas+stars
+    # cov_file = cov_TE_file_template.format("y_milca")
+    # config_update = pipeline_factory.TE_only_config_update(cov_file)
+    # config_update["hmx"] = {"mode": "HMx2020_matter_cdm_gas_stars"}
+    # config_updates["TE_HMx_matter_cdm_gas_stars_calib"] = config_update
+
+    # # ACT, cut ell bins
+    # # TE only, nocib marginalisation
+    for map_name in ["y_ACT_BN", "y_ACT_BN_nocmb", "y_ACT_BN_nocib"]:
+        cov_file = cov_TE_file_template.format("cel_" + map_name)
+        data_file = shear_y_data_file_template.format("cel_" + map_name, "cel", map_name[2:])
+
+        config_update = pipeline_factory.TE_only_config_update(cov_file)
+        config_update["like"].update({"shear_y_data_file": data_file,
+                                      "shear_y_ell_range_3": "mask 0 0 1 1 1 1 0 0 0 1 0 0",
+                                      "shear_y_ell_range_4": "mask 0 0 1 1 1 1 0 0 0 1 0 0"})
+        config_update["beam_filter_cls"] = {"fwhm": 1.6}
+        params_update = {"cib_parameters": {"alpha": 0.0}}
+
+        config_updates[map_name + "_nocib_marg_ell_cut"] = (config_update, params_update)
+
 
     for config_name, config_update in config_updates.items():
         if isinstance(config_update, tuple):
@@ -138,7 +165,7 @@ if __name__ == "__main__":
                                    sampling_options=dict(verbose=True,
                                    debug=False,
                                    sampler_name=sampler,
-                                   live_points=500,
+                                   live_points=250,
                                    multinest_efficiency=0.3,
                                    nested_sampling_tolerance=1e-2,
                                    run_name=run_name))
