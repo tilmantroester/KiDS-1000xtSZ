@@ -1,0 +1,8 @@
+is_auto = True
+nbin = 1
+nbin_a = 1
+nbin_b = 1
+sample_a = 'y'
+sample_b = 'y'
+save_name = ''
+sep_name = 'ell'

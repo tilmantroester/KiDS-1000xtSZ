@@ -1,0 +1,7 @@
+is_auto = False
+nbin_a = 5
+nbin_b = 1
+sample_a = 'KiDS1000'
+sample_b = 'y'
+save_name = ''
+sep_name = 'ell'
