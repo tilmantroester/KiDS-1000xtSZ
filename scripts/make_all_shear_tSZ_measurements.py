@@ -103,13 +103,13 @@ if __name__ == "__main__":
     # theory_run_name = "cov_theory_predictions_run1_hmx_nz128_beam10"
     theory_run_name = "cov_theory_predictions_run3_hmx_nocib_beam1.6"
 
-    raw_ell_file = f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl/ell.txt"  # noqa: E501
+    raw_ell_file = f"../data/xcorr/theory_predictions/{theory_run_name}/output/data_block/shear_y_cl/ell.txt"  # noqa: E501
 
-    raw_Cl_files = [f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_1_1.txt",  # noqa: E501
-                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_2_1.txt",  # noqa: E501
-                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_3_1.txt",  # noqa: E501
-                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_4_1.txt",  # noqa: E501
-                    f"../runs/theory_prediction_runs/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_5_1.txt",  # noqa: E501
+    raw_Cl_files = [f"../data/xcorr/theory_predictions/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_1_1.txt",  # noqa: E501
+                    f"../data/xcorr/theory_predictions/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_2_1.txt",  # noqa: E501
+                    f"../data/xcorr/theory_predictions/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_3_1.txt",  # noqa: E501
+                    f"../data/xcorr/theory_predictions/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_4_1.txt",  # noqa: E501
+                    f"../data/xcorr/theory_predictions/{theory_run_name}/output/data_block/shear_y_cl_beam_pixwin/bin_5_1.txt",  # noqa: E501
                     ]
 
     os.environ["OMP_NUM_THREADS"] = "20"

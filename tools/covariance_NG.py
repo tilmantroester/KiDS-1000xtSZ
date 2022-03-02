@@ -665,8 +665,8 @@ if __name__ == "__main__":
     mask_wl = {k: np.loadtxt(f, usecols=[1]) for k, f in mask_wl_files.items()}
     # mask_wl_overlap = {k: np.loadtxt(f, usecols=[1]) for k, f in mask_wl_overlap_files.items()}          # noqa: E501
 
-    # prediction_path = "../runs/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/"        # noqa: E501
-    prediction_path = "../runs/cov_theory_predictions_run3_hmx_nocib_beam1.6/output/data_block/"        # noqa: E501
+    # prediction_path = "../data/xcorr/theory_predictions/cov_theory_predictions_run1_hmx_nz128_beam10/output/data_block/"        # noqa: E501
+    prediction_path = "../data/xcorr/theory_predictions/cov_theory_predictions_run3_hmx_nocib_beam1.6/output/data_block/"        # noqa: E501
 
     cosmo_params = load_cosmosis_params(prediction_path)
     halo_model_params = load_cosmosis_params(prediction_path, "halo_model_parameters")                 # noqa: E501
