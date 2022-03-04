@@ -13,12 +13,16 @@ if __name__ == "__main__":
 
     # key = "mmmm"
     # tag = "exact_noise_mixed_terms"
+
     key = "nnnn"
     tag = "exact_noise"
+
     # key = "aaaa"
     # tag = "nka"
+
     # key = "ssss"
     # tag = "nka_sva"
+    
     # key = "nnnn"
     # tag = "nka_noise"
 

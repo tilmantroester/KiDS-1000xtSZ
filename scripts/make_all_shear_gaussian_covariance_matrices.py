@@ -7,11 +7,27 @@ if __name__ == "__main__":
                       "shear_KiDS1000_shear_KiDS1000/")
 
     Cl_cov_file = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"
-                   "cov_Cls/Cl_cov_3x2pt_MAP_gal_")
+                   "cov_Cls/Cl_cov_3x2pt_MAP_")
 
-    # output_path = "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_3x2pt_MAP/exact_noise/"
-    # output_path = "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_3x2pt_MAP/exact_noise_mixed_terms/"
-    output_path = "../results/measurements/shear_KiDS1000_shear_KiDS1000/cov_3x2pt_MAP/nka/"
+    # NKA signal-signal terms. Will also compute the NKA versions
+    # of the noise terms
+    mode = "nka"
+
+    # Exact noise-noise terms.
+    # mode = "exact_noise_noise"
+
+    # Noise-signal terms, with exact noise-noise terms
+    # mode = "exact_noise_signal"
+
+    if mode == "exact_noise_noise":
+        output_path = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"
+                       "cov_3x2pt_MAP/exact_noise/")
+    elif mode == "exact_noise_signal":
+        output_path = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"
+                       "cov_3x2pt_MAP/exact_noise_mixed_terms/")
+    elif mode == "nka":
+        output_path = ("../results/measurements/shear_KiDS1000_shear_KiDS1000/"
+                       "cov_3x2pt_MAP/nka/")
 
     cov_idx_slice = slice(0, 120)
     # cov_idx_slice = slice(0, 30)
@@ -34,15 +50,21 @@ if __name__ == "__main__":
         print("Bin combination: ", idx_a, idx_b)
         print()
 
-        cmd = ["python", "compute_cosmic_shear_covariance.py"]
-        # cmd = ["python", "compute_exact_noise_cosmic_shear_covariance.py"]
+        if mode == "nka" or mode == "exact_noise_signal":
+            cmd = ["python", "compute_cosmic_shear_covariance.py"]
+        else:
+            # Exact noise-noise
+            cmd = ["python", "compute_exact_noise_cosmic_shear_covariance.py"]
 
         cmd += ["--pymaster-workspace-path", workspace_path]
         cmd += ["--output-path", output_path]
 
         cmd += ["--Cl-cov-file", Cl_cov_file]
-        # cmd += ["--compute-exact-noise-mixed-terms"]
-        cmd += ["--compute-nka-terms"]
+
+        if mode == "nka":
+            cmd += ["--compute-nka-terms"]
+        elif mode == "exact_noise_signal":
+            cmd += ["--compute-exact-noise-mixed-terms"]
 
         cmd += ["--idx-a", "{}-{}".format(*idx_a)]
         cmd += ["--idx-b", "{}-{}".format(*idx_b)]
