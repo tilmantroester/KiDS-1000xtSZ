@@ -15,11 +15,14 @@ import scipy.stats
 
 import camb
 
-import anesthetic
-import tensiometer
+try:
+    import anesthetic
+    import tensiometer
 
-import tensiometer.gaussian_tension
-import tensiometer.mcmc_tension
+    import tensiometer.gaussian_tension
+    import tensiometer.mcmc_tension
+except ImportError:
+    print("Couldn't import anesthetic and/or tensionmeter")
 
 KCAP_PATH = "../../../KiDS/kcap/"
 import sys
@@ -75,14 +78,14 @@ def get_MAP(MAP_path, verbose=False):
 
         MAPs[MAP_logpost] = {n.name : getattr(MAP_chain.getParams(), n.name)[MAP_idx] for i, n in enumerate(MAP_chain.getParamNames().names)}
         MAPs[MAP_logpost]["loglike"] = MAP_chain.loglikes[MAP_idx]
-        
+
         files[MAP_logpost] = file
-        
+
         if MAP_logpost > MAP_max_logpost:
             MAP = MAPs[MAP_logpost]
             MAP_chi2 = MAP_chain.loglikes[MAP_idx]
             MAP_max_logpost = MAP_logpost
-    
+
     files = {k : files[k] for k in sorted(files, reverse=True)}
     if len(files) == 0:
         raise ValueError(f"Could not load any MAP chains using path template {MAP_path}.")
@@ -632,13 +635,14 @@ if __name__ == "__main__":
                     # "fid_constraints_Om_sigma8",
                     # "other_y_constraints_Om_sigma8",
                     # "other_y_constraints_Sigmaalpha",
-                    "logt_heat_constraint",
+                    # "logt_heat_constraint",
                     # "B-modes",
                     # "bp_vs_pCl",
                     # "bp_vs_pCl_window_functions",
-                    "bp_vs_pCl_constraints_Om_S8",
-                    "bp_vs_pCl_constraints_S8",
-                    # "fid_constraints_all"
+                    # "bp_vs_pCl_constraints_Om_S8",
+                    # "bp_vs_pCl_constraints_S8",
+                    # "fid_constraints_all",
+                    "ACT_Cls"
     ]
 
 
@@ -1153,8 +1157,9 @@ if __name__ == "__main__":
             chain_selection = [{"name" : "EE_fid",},
                                {"name" : "TE_fid",},
                                {"name" : "joint_fid",},
+                               {"name" : "Planck_fiducial",},
             ]
-            chain_labels = ["Cosmic shear", "shear--tSZ", "Cosmic shear + shear--tSZ"]
+            chain_labels = ["Cosmic shear", "shear--tSZ", "Cosmic shear + shear--tSZ", "Planck"]
 
             chains_to_plot = select_chains(chains, chain_selection)
 
@@ -1172,7 +1177,7 @@ if __name__ == "__main__":
             ax[-1].legend(g.contours_added[-len(chains_to_plot):],
                         chain_labels,
                         frameon=False, fontsize=legend_fontsize)
-            g.export("plots/KiDSxPlanck_fid_CIB_Om_sigma8.pdf")
+            g.export("plots/KiDSxPlanck_fid_CIB_Om_sigma8_w_Planck.pdf")
 
         if "other_y_constraints_Om_sigma8" in make_plots:
             print("Plotting other_y_constraints_Om_sigma8")
@@ -1624,6 +1629,46 @@ if __name__ == "__main__":
             g.subplots[idx, 0].yaxis.labelpad = 15
 
             g.export("plots/KiDSxPlanck_all.pdf")
+        
+        if "ACT_Cls" in make_plots:
+            print("Plotting ACT Cls")
+            Cl_ACT = {"nocib": np.loadtxt("../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/likelihood/data/Cl_TE_shear_KiDS1000_cel_ACT_BN_nocib.txt")[:, 1:],
+                      "nocmb": np.loadtxt("../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocmb/likelihood/data/Cl_TE_shear_KiDS1000_cel_ACT_BN_nocmb.txt")[:, 1:],
+                      "all": np.loadtxt("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/likelihood/data/Cl_TE_shear_KiDS1000_cel_ACT_BN.txt")[:, 1:]}
+            Cl_ACT_err = {"nocib": np.sqrt(np.diag(np.loadtxt("../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocib/likelihood/cov/covariance_total_SSC_mask_TETE.txt"))).reshape(-1, n_ell_bin).T,
+            "nocmb": np.sqrt(np.diag(np.loadtxt("../results/measurements/shear_KiDS1000_cel_y_ACT_BN_nocmb/likelihood/cov/covariance_total_SSC_mask_TETE.txt"))).reshape(-1, n_ell_bin).T,
+            "all": np.sqrt(np.diag(np.loadtxt("../results/measurements/shear_KiDS1000_cel_y_ACT_BN/likelihood/cov/covariance_total_SSC_mask_TETE.txt"))).reshape(-1, n_ell_bin).T}
+
+            common_kwargs = {}#{"markersize": 3, "elinewidth": 1"}
+            fig, ax = plotting_utils.plot_xcorr(
+                Cls=[{"name"        : "No deprojection",
+                    "X"           : ell_eff,
+                    "Y"           : Cl_ACT["all"],
+                    "Y_error"     : Cl_ACT_err["all"],
+                    "plot_kwargs" : {"c": "C7", "ls": "none", "marker": ".", **common_kwargs}},
+                    {"name"        : "CMB deprojected",
+                    "X"           : ell_eff,
+                    "Y"           : Cl_ACT["nocmb"],
+                    "Y_error"     : Cl_ACT_err["nocmb"],
+                    "plot_kwargs" : {"c": "C8", "ls": "none", "marker": ".", **common_kwargs}},
+                    {"name"        : "CIB deprojected",
+                    "X"           : ell_eff,
+                    "Y"           : Cl_ACT["nocib"],
+                    "Y_error"     : Cl_ACT_err["nocib"],
+                    "plot_kwargs" : {"c": "C9", "ls": "none", "marker": ".", **common_kwargs}},
+                    ],
+                n_z_bin=5,
+                figsize=(column_width, 0.7*column_width),
+                scaling=lambda x: x**2/(2*np.pi),
+                x_data_range=(100, 1500), x_range=(100, 1800), sharey=True,
+                x_offset=lambda x, i: x*1.06**i,
+                y_range=(-3e-9, 6.1e-9),
+                y_label=r"$\ell^2/2\pi\ C_\ell^{\gamma y}$",
+                field="$y$",
+                legend_fontsize=legend_fontsize, label_fontsize=legend_fontsize,
+            )
+            ax[0,2].get_xticklabels()[1].set_visible(False)
+            fig.savefig("plots/data_vectors_ACT.pdf")
 
 
 
