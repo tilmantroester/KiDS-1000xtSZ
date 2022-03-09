@@ -1,6 +1,6 @@
 # Make cosmic shear measurements
 
-This is a summary in how the NaMaster measurement and covariance estimates were computed. The scripts listed here are the main scripts used for the measurements in the paper. The remaining scripts in the directory are obsolete and should be cleaned up.
+This is a summary in how the NaMaster measurement and covariance estimates were computed. The scripts listed here are the main scripts used for the measurements in the paper. This is not an automated end-to-end pipeline and some of the scripts need to run multiple times with certain flags changed. Have look at what the scripts are doing and adjust accordingly for your setup.
 
 ## 1. Create catalogs and catalog statistics
 ```
@@ -41,6 +41,8 @@ The covariance matrices are computed in `make_all_shear_gaussian_covariance_matr
 `assemble_cosmic_shear_data_and_covariance_files.py` assembles the `txt` files of the covariance terms. Uncomment the key/tag pair at the top of the script for the term that should be assembled. The terms still need to be added up, which is done with `add_up_covariance_terms.py`. This is currently targeted at the joint shear-tSZ analysis and might not work out of the box for a cosmic shear-only analyses.
 
 # Make cross-correlation and joint analysis measurements
+
+This largely follows the cosmic shear setup above.
 
 ## 1. Compute mode-mixing matrices and measure Cls
 ```
