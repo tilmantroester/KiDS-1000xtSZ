@@ -1,4 +1,4 @@
-# Joint analysis of shear-tSZ cross-correlations and cosmic shear with KiDS-1000, Planck, an dACT
+# Joint analysis of shear-tSZ cross-correlations and cosmic shear with KiDS-1000, Planck, and ACT
 
 This repository contains the scripts, utilities, data vectors, and covariances used in the paper [Joint constraints on cosmology and the impact of baryon feedback: combining KiDS-1000 lensing with the thermal Sunyaev-Zeldovich effect from Planck and ACT](https://arxiv.org/abs/2109.04458). 
 
