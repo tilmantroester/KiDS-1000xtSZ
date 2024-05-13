@@ -431,15 +431,15 @@ def calculate_advanced_chain_stats(c, file=sys.stdout):
     chain_file = glob.glob(os.path.join(c.chain_def["root_dir"], "output/samples_*.txt"))[0]
     root = glob.glob(os.path.join(c.chain_def["root_dir"], "output/multinest/*_.txt"))[0][:-4]
 
-    nested = anesthetic.NestedSamples(root=root)
-    ns_output = nested.ns_output(nsamples=100)
+    nested = anesthetic.read_chains(root)
+    ns_output = nested.stats(nsamples=100)
     stats["nested"] = ns_output
     
-    logL = nested.logL
-    logdX = nested.dlogX(nsamples=100)
+    logL = nested.logL.to_numpy()
+    logdX = nested.logdX(nsamples=100)
     logZ = nested.logZ(logdX)
         
-    d = nested.d(logdX)
+    d = nested.d_G(logdX)
     logw = logdX.add(logL, axis=0) - logZ
     w = np.exp(logw)/np.sum(np.exp(logw))
     
@@ -1776,14 +1776,21 @@ if __name__ == "__main__":
         for name, MAP_name, CI_name in [("MAP", "MAP", "PJ-HPDI"), ("marg", "marg MAP", "M-HPDI")]:
             with open(f"stats/parameter_constraints_{name}.tex", "w") as f:
                 constraints = {}
-                for name in ["joint_fid", "TE_fid"]:
-                    chain = chains[name]
-                    constraints[name] = {}
+                for chain_name in ["joint_fid", "TE_fid", "EE_fid", "EE_bp"]:
+                    chain = chains[chain_name]
+                    constraints[chain_name] = {}
                     for p in ["omegam", "sigma8", "s8", "logt_heat", "Sigma0p2"]:
                         try:
-                            MAP = chain.chain_stats[MAP_name][p]
+                            MAPs = chain.chain_stats[MAP_name]
                         except KeyError:
-                            MAP =  chain.chain_stats["chain MAP"][p]
+                            MAPs =  chain.chain_stats["chain MAP"]
+                        
+                        try:
+                            MAP = MAPs[p]
+                        except KeyError:
+                            print(f"Chain {chain_name} does not have parameter {p} for {MAP_name}")
+                            continue
+                        
                         MAP_CI = chain.chain_stats[CI_name][p][1] - MAP, chain.chain_stats[CI_name][p][0] - MAP 
 
                         CI_up_str = "{" + f"+{MAP_CI[0]:.2g}" + "}"
@@ -1791,7 +1798,7 @@ if __name__ == "__main__":
 
                         MAP_str = f"{MAP:.3g}^{CI_up_str}_{CI_lo_str}"
                         
-                        constraints[name][p] = MAP_str
+                        constraints[chain_name][p] = MAP_str
                     
                 print(r"\newcommand{\omJoint}{\ensuremath{" + constraints["joint_fid"]["omegam"] + r"}\xspace}", file=f)
                 print(r"\newcommand{\sigmaeightJoint}{\ensuremath{" + constraints["joint_fid"]["sigma8"] + r"}\xspace}", file=f)
@@ -1799,4 +1806,14 @@ if __name__ == "__main__":
                 print(r"\newcommand{\logtheatJoint}{\ensuremath{" + constraints["joint_fid"]["logt_heat"] + r"}\xspace}", file=f)
                 print("", file=f)
                 print(r"\newcommand{\SigmaalphaXcorr}{\ensuremath{" + constraints["TE_fid"]["Sigma0p2"] + r"}\xspace}", file=f)
+                print("", file=f)
+                print(r"\newcommand{\omEE}{\ensuremath{" + constraints["EE_fid"]["omegam"] + r"}\xspace}", file=f)
+                print(r"\newcommand{\sigmaeightEE}{\ensuremath{" + constraints["EE_fid"]["sigma8"] + r"}\xspace}", file=f)
+                print(r"\newcommand{\SeightEE}{\ensuremath{" + constraints["EE_fid"]["s8"] + r"}\xspace}", file=f)
+                print(r"\newcommand{\logtheatEE}{\ensuremath{" + constraints["EE_fid"]["logt_heat"] + r"}\xspace}", file=f)
+                print("", file=f)
+                print(r"\newcommand{\omEEBP}{\ensuremath{" + constraints["EE_bp"]["omegam"] + r"}\xspace}", file=f)
+                print(r"\newcommand{\sigmaeightEEBP}{\ensuremath{" + constraints["EE_bp"]["sigma8"] + r"}\xspace}", file=f)
+                print(r"\newcommand{\SeightEEBP}{\ensuremath{" + constraints["EE_bp"]["s8"] + r"}\xspace}", file=f)
+
 
